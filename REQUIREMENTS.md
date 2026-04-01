@@ -1,41 +1,41 @@
-Requirements Specification: Valentine's Garage Application
+# Requirements Specification: Valentine's Garage Application
 
-1. Project Overview
+## 1. Project Overview
 
-This document outlines the software requirements for a truck check-in and repair management application designed specifically for Valentine's Garage. The system aims to streamline vehicle intake, enhance accountability among mechanics during collaborative repairs, and provide comprehensive oversight for management. This system is to be developed as a group assignment by a team of four.
+This document outlines the software requirements for an **Android mobile application** (truck check-in and repair management system) designed specifically for Valentine's Garage. The system aims to streamline vehicle intake, enhance accountability among mechanics during collaborative repairs, and provide comprehensive oversight for management. This system is to be developed as a Mobile Application Development group assignment by a team of four.
 
-2. User Roles
+## 2. User Roles
 
-Mechanic: Responsible for logging vehicle conditions, recording mileage, ticking off completed tasks, and adding service notes during repairs.
-Manager (Valentine): Requires access to oversight reports regarding employee performance and vehicle intake states.
+- **Mechanic**: Responsible for logging vehicle conditions via the Android app, recording mileage, ticking off completed tasks in real-time, and adding service notes during repairs.
+- **Manager (Valentine)**: Requires access to oversight reports regarding employee performance and vehicle intake states.
 
-3. Functional Requirements
+## 3. Functional Requirements
 
-3.1. Vehicle Check-In Module
+### 3.1. Vehicle Check-In Module
+- **FR-1.1**: The Android app must allow users to initiate a new check-in record for a truck arriving at the garage.
+- **FR-1.2**: The app must capture, optimize (compress), and securely store the physical condition of the vehicle at the exact time of check-in via native Android camera integration.
+- **FR-1.3**: The system must record the exact number of kilometres driven by the vehicle at check-in to prevent and monitor for unauthorised use.
 
-FR-1.1: The system must allow users to initiate a new check-in record for a truck arriving at the garage.
-FR-1.2: The system must capture and securely store the physical condition of the vehicle at the exact time of check-in.
-FR-1.3: The system must record the exact number of kilometres driven by the vehicle at check-in to prevent and monitor for unauthorised use.
+### 3.2. Servicing and Repairs Module (Collaborative Workflow)
+- **FR-2.1**: The system must provide a checklist of repair tasks for each checked-in vehicle.
+- **FR-2.2**: The app must allow mechanics to collaboratively tick off completed tasks on the same vehicle with real-time syncing across devices.
+- **FR-2.3**: The system must allow mechanics to add written notes detailing the specific work they performed on the vehicle.
+- **FR-2.4**: The system must explicitly track and display which specific mechanic completed a task or added a note to prevent tasks from going undone due to miscommunication.
 
-3.2. Servicing and Repairs Module (Collaborative Workflow)
+### 3.3. Reporting and Oversight Module
+- **FR-3.1**: The system must generate reports detailing the specific work and tasks completed by each individual employee.
+- **FR-3.2**: The system must provide reports showing the initial condition and recorded kilometres of vehicles from their check-in phase.
 
-FR-2.1: The system must provide a checklist of repair tasks for each checked-in vehicle.
-FR-2.2: The system must allow mechanics to collaboratively tick off completed tasks on the same vehicle.
-FR-2.3: The system must allow mechanics to add written notes detailing the specific work they performed on the vehicle.
-FR-2.4: The system must explicitly track and display which specific mechanic completed a task or added a note to prevent tasks from going undone due to miscommunication.
+## 4. Non-Functional Requirements
 
-3.3. Reporting and Oversight Module
+- **NFR-1 (Auditability)**: All actions, including task completions and notes, must be strictly linked to the authenticated user who performed them to maintain accountability.
+- **NFR-2 (Concurrency)**: The system must handle simultaneous updates reliably, as multiple mechanics may be viewing and updating the same vehicle's repair checklist concurrently. Data must reflect in real-time.
+- **NFR-3 (Platform)**: The application MUST be developed exclusively for the **Android platform** to meet the specific target device requirements.
+- **NFR-4 (Offline Support)**: The system must support offline data caching so mechanics can continue to tick off tasks and write notes in garage Wi-Fi dead zones, automatically syncing once connectivity is restored.
+- **NFR-5 (Efficiency & Bandwidth)**: The application must explicitly compress large media files (native Android camera images) prior to cloud upload to conserve network bandwidth and storage.
+- **NFR-6 (Maintainability & Architecture)**: The application must utilize a predictable global state management approach (e.g., React Context or Zustand) to handle global data such as user roles and authentication state.
 
-FR-3.1: The system must generate reports detailing the specific work and tasks completed by each individual employee.
-FR-3.2: The system must provide reports showing the initial condition and recorded kilometres of vehicles from their check-in phase.
+## 5. Project Constraints and Assessment
 
-4. Non-Functional Requirements
-
-NFR-1 (Auditability): All actions, including task completions and notes, must be strictly linked to the authenticated user who performed them to maintain accountability.
-NFR-2 (Concurrency): The system must handle simultaneous updates reliably, as multiple mechanics may be viewing and updating the same vehicle's repair checklist concurrently.
-
-5. Project Constraints and Assessment
-
-Team Size: The application must be developed collaboratively by a team of exactly four members.
-
-Assessment: The final project deliverable will be evaluated against the provided assessment rubric (referenced as Table 1 in the assignment brief).
+- **Team Size**: The application must be developed collaboratively by a team of exactly four members.
+- **Assessment**: The final project deliverable will be evaluated against the provided assessment rubric (referenced as Table 1 in the assignment brief).
