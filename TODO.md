@@ -1,6 +1,6 @@
 # Valentine's Garage Android Application - Implementation To-Do List
 
-This document outlines the detailed implementation plan, structured chronologically by priority. The project assumes a React Native (Android specific) and Firebase (Auth, Firestore for concurrency) technology stack. Tasks are distributed evenly among exactly 4 team members.
+This document outlines the detailed implementation plan, structured chronologically by priority. The project uses pure Kotlin with Jetpack Compose, Firebase (Auth, Firestore for concurrency), and Android Navigation Component. Tasks are distributed evenly among exactly 4 team members.
 
 ---
 
@@ -8,53 +8,55 @@ This document outlines the detailed implementation plan, structured chronologica
 **Assignee: Member 1**
 
 ### 1. Initialize Firebase Configuration
-- **File Name**: `firebaseConfig.js`
-- **Directory**: `/src/config/`
+- **File Name**: `FirebaseConfig.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/firebase/`
 - **Description**: Setup Firebase connection for Auth, Firestore (real-time DB for concurrency), and Storage.
-- **Depends On**: `package.json` (Firebase SDK installation)
-- **Where it will be called**: All service files, `App.js`
+- **Depends On**: `build.gradle` (Firebase SDK dependencies)
+- **Where it will be called**: All service classes, MainActivity
 - **Tasks**:
-    - [ ] Initialize the React Native project (e.g., `npx react-native init ValentinesGarage`).
     - [ ] Create the Firebase project in the Firebase Console (Add an Android App).
-    - [ ] Install required Firebase SDKs (`@react-native-firebase/app`, `auth`, `firestore`, `storage`).
-    - [ ] **Setup Android native configuration (Add `google-services.json` to the `android/app` directory and update `build.gradle` files).**
+    - [ ] Add Firebase dependencies to `build.gradle.kts` (Firebase Auth, Firestore, Storage).
+    - [ ] **Download `google-services.json` from Firebase Console and add to `android/app/` directory. Update `build.gradle` files.**
+    - [ ] Create `FirebaseConfig.kt` object to initialize Firebase Auth, Firestore, and Storage.
     - [ ] Explicitly enable Firestore offline persistence/caching to support offline task updates in garage dead zones.
-    - [ ] Export `auth`, `db` (Firestore), and `storage` instances from `firebaseConfig.js`.
+    - [ ] Expose `auth`, `firestore`, and `storage` references as singleton instances.
 
 ### 2. Global State Management Setup
-- **File Name**: `store.js` (if Zustand) or `AuthContext.js` (if React Context)
-- **Directory**: `/src/store/` or `/src/context/`
-- **Description**: Setup global state management to handle auth status and user roles without deep prop drilling.
-- **Depends On**: `package.json` (Zustand installation, if applicable)
-- **Where it will be called**: `App.js`, and globally across screens
+- **File Name**: `AppViewModel.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/viewmodel/`
+- **Description**: Setup ViewModel-based state management to handle auth status and user roles without complex parameter passing.
+- **Depends On**: `build.gradle.kts` (Jetpack Lifecycle/ViewModel dependencies)
+- **Where it will be called**: MainActivity and all Fragments/Composables
 - **Tasks**:
-    - [ ] Install state manager (e.g., `npm install zustand`) or initialize React Context.
-    - [ ] Create a global store to hold `currentUser` (ID, Name, Email) and `userRole` (Mechanic vs. Manager).
-    - [ ] Create actions/reducers to update the global state upon successful login/logout.
+    - [ ] Add Jetpack Lifecycle and ViewModel dependencies to `build.gradle.kts`.
+    - [ ] Create `AppViewModel` extending `ViewModel` to hold `currentUser` (ID, Name, Email) and `userRole` (Mechanic vs. Manager) as `StateFlow<>` or `LiveData<>`.
+    - [ ] Create functions to update the global state upon successful login/logout.
+    - [ ] Ensure the ViewModel is shared across all screens via the MainActivity.
 
 ### 3. Authentication Service Logic
-- **File Name**: `authService.js`
-- **Directory**: `/src/services/`
-- **Description**: Functions for login/logout and session management.
-- **Depends On**: `firebaseConfig.js`, Global State store
-- **Where it will be called**: `LoginScreen.js`, `App.js`
+- **File Name**: `AuthService.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/service/`
+- **Description**: Functions for login/logout and session management using Firebase Auth.
+- **Depends On**: `FirebaseConfig.kt`, AppViewModel
+- **Where it will be called**: LoginScreen Composable, MainActivity
 - **Tasks**:
-    - [ ] Create `loginUser(email, password)` function using Firebase Auth.
+    - [ ] Create `loginUser(email: String, password: String)` suspend function using Firebase Auth.
     - [ ] Create `logoutUser()` function.
-    - [ ] Create a `getUserRole(userId)` function to fetch the user's role from Firestore.
-    - [ ] Set up an auth state listener to persist user login sessions and hydrate the global state.
+    - [ ] Create `getUserRole(userId: String)` suspend function to fetch the user's role from Firestore.
+    - [ ] Set up an Auth state listener in `AuthService` to persist user login sessions and update the AppViewModel.
 
 ### 4. Login Screen & Main App Navigator
-- **File Name**: `LoginScreen.js` & `App.js`
-- **Directory**: `/src/screens/` and `/` (Project Root)
-- **Description**: Android UI for login and entry point/routing setup.
-- **Depends On**: `authService.js`, Global State
-- **Where it will be called**: `index.js`
+- **File Name**: `LoginScreen.kt` & `MainActivity.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/screens/` and `app/src/main/java/com/codegrogu/guava/`
+- **Description**: Jetpack Compose UI for login and entry point/navigation setup.
+- **Depends On**: `AuthService.kt`, AppViewModel
+- **Where it will be called**: AppNavigation Composable
 - **Tasks**:
-    - [ ] Install React Navigation dependencies (`@react-navigation/native`, `@react-navigation/stack`, plus Android dependencies like `react-native-screens` and `react-native-safe-area-context`).
-    - [ ] Build Login UI (Email/Password inputs, Login button, loading spinner, error handling).
-    - [ ] Set up the Navigation Stacks: `AuthStack`, `MechanicStack`, `ManagerStack`.
-    - [ ] Implement routing logic to automatically switch stacks based on the global state `userRole` and auth status.
+    - [ ] Add Jetpack Compose and Navigation dependencies to `build.gradle.kts`.
+    - [ ] Create `LoginScreen` Composable with Email/Password inputs, Login button, loading state, and error handling.
+    - [ ] Set up Navigation Graph with root navigation controller.
+    - [ ] Implement conditional navigation logic: AuthGraph (Login), MechanicGraph, or ManagerGraph based on AppViewModel `userRole` and auth status.
+    - [ ] Create `AppNavigation` Composable to manage all navigation flows.
 
 ---
 
@@ -62,43 +64,42 @@ This document outlines the detailed implementation plan, structured chronologica
 **Assignee: Member 2**
 
 ### 5. Camera & Image Optimization Component
-- **File Name**: `CameraCapture.js`
-- **Directory**: `/src/components/`
-- **Description**: Reusable component to access native Android camera, capture, and compress vehicle physical condition.
-- **Depends On**: Android Manifest permissions.
-- **Where it will be called**: `CheckInScreen.js`
+- **File Name**: `CameraCapture.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/components/`
+- **Description**: Reusable Composable to access native Android camera, capture, and compress vehicle physical condition images.
+- **Depends On**: Android Manifest permissions, necessary dependencies
+- **Where it will be called**: `CheckInScreen` Composable
 - **Tasks**:
-    - [ ] Install camera library (e.g., `react-native-vision-camera` or `expo-camera`).
-    - [ ] Install an image compression library (e.g., `react-native-compressor` or `react-native-image-crop-picker`).
-    - [ ] **Update `android/app/src/main/AndroidManifest.xml` with `<uses-permission android:name="android.permission.CAMERA" />` and related storage permissions.**
-    - [ ] Write logic to request Android runtime camera and storage permissions from the user.
-    - [ ] Build camera UI (Viewfinder, Capture button, Retake button).
-    - [ ] Implement logic to compress raw high-resolution images before temporarily saving them to local device cache (saves Firebase free-tier bandwidth).
+    - [ ] Add camera and image compression libraries to `build.gradle.kts` (e.g., `androidx.camera:camera-camera2`, image compression library).
+    - [ ] **Update `AndroidManifest.xml` with `<uses-permission android:name="android.permission.CAMERA" />` and storage permissions.**
+    - [ ] Implement runtime permission requests for camera and storage permissions.
+    - [ ] Build Jetpack Compose camera preview UI (Viewfinder, Capture button, Retake button).
+    - [ ] Implement logic to compress raw high-resolution images before saving to device cache (conserves Firebase free-tier bandwidth).
 
 ### 6. Vehicle Check-In Service
-- **File Name**: `vehicleService.js`
-- **Directory**: `/src/services/`
-- **Description**: DB queries to create a new vehicle check-in, log initial kilometres, and upload compressed photos.
-- **Depends On**: `firebaseConfig.js`
-- **Where it will be called**: `CheckInScreen.js`, `reportService.js`
+- **File Name**: `VehicleService.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/service/`
+- **Description**: Firestore queries to create a new vehicle check-in, log initial kilometers, and upload compressed photos.
+- **Depends On**: `FirebaseConfig.kt`
+- **Where it will be called**: `CheckInScreen` Composable, `ReportService.kt`
 - **Tasks**:
-    - [ ] Create `uploadConditionImage(compressedImageUri)` function to push local images to Firebase Storage and return the download URL.
-    - [ ] Create `createCheckInRecord(truckDetails, km, imageUrl)` function.
+    - [ ] Create `uploadConditionImage(compressedImageUri: Uri)` suspend function to push local images to Firebase Storage and return the download URL.
+    - [ ] Create `createCheckInRecord(vehicleDetails: VehicleData, km: Int, imageUrl: String)` suspend function.
     - [ ] Include server timestamp creation in `createCheckInRecord` to accurately log exact check-in time.
     - [ ] Ensure the check-in record automatically initializes an empty "Repair Tasks" sub-collection.
 
 ### 7. Vehicle Check-In Screen UI
-- **File Name**: `CheckInScreen.js`
-- **Directory**: `/src/screens/`
-- **Description**: Form to input truck details, kilometers, and access the camera for condition images.
-- **Depends On**: `CameraCapture.js`, `vehicleService.js`
-- **Where it will be called**: Mechanic Stack Navigation
+- **File Name**: `CheckInScreen.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/screens/`
+- **Description**: Jetpack Compose form to input truck details, kilometers, and access the camera for condition images.
+- **Depends On**: `CameraCapture.kt`, `VehicleService.kt`
+- **Where it will be called**: Mechanic Navigation Graph
 - **Tasks**:
-    - [ ] Build text inputs for Truck License Plate/ID and Initial Kilometres.
-    - [ ] Integrate `<CameraCapture />` component into the form layout.
-    - [ ] Build a "Submit Check-In" button specifically styled following Android Material Design guidelines.
+    - [ ] Build Compose text fields for Truck License Plate/ID and Initial Kilometers.
+    - [ ] Integrate `CameraCapture` Composable into the form layout.
+    - [ ] Build a "Submit Check-In" button styled with Material Design 3.
     - [ ] Implement form validation (prevent submission without km, ID, and at least one condition photo).
-    - [ ] Show an Android Toast message (`ToastAndroid`) and navigate back to the dashboard upon successful DB upload.
+    - [ ] Show a Toast message and navigate back to dashboard upon successful DB upload.
 
 ---
 
@@ -106,41 +107,41 @@ This document outlines the detailed implementation plan, structured chronologica
 **Assignee: Member 3**
 
 ### 8. Repair Service (Real-time Sync)
-- **File Name**: `repairService.js`
-- **Directory**: `/src/services/`
-- **Description**: Firestore listeners for real-time syncing of repair checklists.
-- **Depends On**: `firebaseConfig.js`
-- **Where it will be called**: `RepairWorkflowScreen.js`, `TaskListItem.js`
+- **File Name**: `RepairService.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/service/`
+- **Description**: Firestore listeners for real-time syncing of repair checklists using Flow.
+- **Depends On**: `FirebaseConfig.kt`
+- **Where it will be called**: `RepairWorkflowScreen` Composable, `TaskListItem` Composable
 - **Tasks**:
-    - [ ] Create `subscribeToVehicleTasks(vehicleId, callback)` using Firestore `onSnapshot` to listen for real-time changes.
-    - [ ] Create `toggleTaskStatus(vehicleId, taskId, isComplete, mechanicId, mechanicName)` function.
-    - [ ] Create `updateTaskNote(vehicleId, taskId, noteText, mechanicId, mechanicName)` function.
+    - [ ] Create `subscribeToVehicleTasks(vehicleId: String): Flow<List<RepairTask>>` using Firestore `snapshotFlow` to listen for real-time changes.
+    - [ ] Create `toggleTaskStatus(vehicleId: String, taskId: String, isComplete: Boolean, mechanicId: String, mechanicName: String)` suspend function.
+    - [ ] Create `updateTaskNote(vehicleId: String, taskId: String, noteText: String, mechanicId: String, mechanicName: String)` suspend function.
     - [ ] Ensure all updates append the mechanic's ID/Name to enforce accountability (NFR-1).
 
 ### 9. Task List Item Component
-- **File Name**: `TaskListItem.js`
-- **Directory**: `/src/components/`
-- **Description**: UI for a single repair task with an Android-style checkbox, displaying mechanic attributions and notes.
-- **Depends On**: Global State (Context/Zustand)
-- **Where it will be called**: `RepairWorkflowScreen.js`
+- **File Name**: `TaskListItem.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/components/`
+- **Description**: Jetpack Compose UI for a single repair task with Material Design checkbox, displaying mechanic attributions and notes.
+- **Depends On**: AppViewModel
+- **Where it will be called**: `RepairWorkflowScreen` Composable
 - **Tasks**:
-    - [ ] Design the task row layout (Task title, native Android Checkbox component via `@react-native-community/checkbox` or similar).
-    - [ ] Add a sub-text field displaying "Completed by: [Name]" conditionally if checked.
+    - [ ] Design the task row layout using Compose (Task title, native Material Checkbox).
+    - [ ] Add sub-text displaying "Completed by: [Name]" conditionally when checked.
     - [ ] Add a collapsible/expandable section for "Mechanic Notes".
     - [ ] Build an input field and "Save Note" button within the expanded section.
     - [ ] Display existing notes with the name of the mechanic who wrote them.
-    - [ ] Consume global state for the current mechanic's details directly in this component to execute task toggles/notes, avoiding deep prop drilling.
+    - [ ] Consume AppViewModel for current mechanic details directly to execute task toggles/notes.
 
 ### 10. Collaborative Repair Screen UI
-- **File Name**: `RepairWorkflowScreen.js`
-- **Directory**: `/src/screens/`
-- **Description**: Real-time list of all tasks for a specific vehicle. Multiple mechanics concurrently update this screen.
-- **Depends On**: `TaskListItem.js`, `repairService.js`
-- **Where it will be called**: Mechanic Stack Navigation
+- **File Name**: `RepairWorkflowScreen.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/screens/`
+- **Description**: Real-time Compose list of all tasks for a specific vehicle. Multiple mechanics concurrently update this screen.
+- **Depends On**: `TaskListItem.kt`, `RepairService.kt`
+- **Where it will be called**: Mechanic Navigation Graph
 - **Tasks**:
-    - [ ] Implement `useEffect` to trigger `subscribeToVehicleTasks` on screen mount.
-    - [ ] Render a FlatList/ScrollView using the `<TaskListItem />` component for each task.
-    - [ ] Add visual cues (e.g., a green highlight or Material icon checkmark) when another mechanic finishes a task while the screen is open (NFR-2).
+    - [ ] Use `LaunchedEffect` to trigger `subscribeToVehicleTasks` on screen composition.
+    - [ ] Render a LazyColumn using the `TaskListItem` Composable for each task.
+    - [ ] Add visual cues (e.g., a green highlight or Material icon checkmark) when another mechanic finishes a task while the screen is displayed (NFR-2).
 
 ---
 
@@ -148,36 +149,36 @@ This document outlines the detailed implementation plan, structured chronologica
 **Assignee: Member 4**
 
 ### 11. Reporting Service
-- **File Name**: `reportService.js`
-- **Directory**: `/src/services/`
-- **Description**: Data aggregation queries to pull work history and fetch check-in logs.
-- **Depends On**: `firebaseConfig.js`, `vehicleService.js`
-- **Where it will be called**: `ManagerDashboard.js`
+- **File Name**: `ReportService.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/service/`
+- **Description**: Firestore aggregation queries to pull work history and fetch check-in logs.
+- **Depends On**: `FirebaseConfig.kt`, `VehicleService.kt`
+- **Where it will be called**: `ManagerDashboard` Composable
 - **Tasks**:
-    - [ ] Create `getEmployeePerformanceReport(mechanicId, dateRange)` to query all tasks completed/noted by a specific user.
-    - [ ] Create `getVehicleIntakeReport(dateRange)` to pull initial condition images and kilometres logged at check-in.
+    - [ ] Create `getEmployeePerformanceReport(mechanicId: String, dateRange: DateRange)` suspend function to query all tasks completed/noted by a specific user.
+    - [ ] Create `getVehicleIntakeReport(dateRange: DateRange)` suspend function to pull initial condition images and kilometers logged at check-in.
     - [ ] Format and sanitize the data returns so they are easily consumable by the UI components.
 
 ### 12. Report Card UI Component
-- **File Name**: `ReportCard.js`
-- **Directory**: `/src/components/`
-- **Description**: Reusable Android Card UI component for displaying statistical summaries.
+- **File Name**: `ReportCard.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/components/`
+- **Description**: Reusable Jetpack Compose Card UI for displaying statistical summaries.
 - **Depends On**: None
-- **Where it will be called**: `ManagerDashboard.js`
+- **Where it will be called**: `ManagerDashboard` Composable
 - **Tasks**:
-    - [ ] Design Employee variant: Show mechanic name, total tasks completed, and a list of specific vehicle IDs they worked on (use Android elevation for card shadows).
+    - [ ] Design Employee variant: Show mechanic name, total tasks completed, and list of specific vehicle IDs they worked on (use Material Design elevation/shadows).
     - [ ] Design Vehicle variant: Show Truck ID, Check-in Date, Initial KM, and an image thumbnail of the vehicle condition.
-    - [ ] Implement a modal/lightbox feature to click and expand the vehicle condition thumbnail to full screen.
+    - [ ] Implement a modal/fullscreen feature to click and expand the vehicle condition thumbnail to full screen.
 
 ### 13. Manager Dashboard Screen UI
-- **File Name**: `ManagerDashboard.js`
-- **Directory**: `/src/screens/`
-- **Description**: Exclusive screen for the Manager role (Valentine). Displays oversight reports.
-- **Depends On**: `ReportCard.js`, `reportService.js`, Global State
-- **Where it will be called**: Manager Stack Navigation
+- **File Name**: `ManagerDashboard.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/screens/`
+- **Description**: Exclusive screen for the Manager role (Valentine). Displays oversight reports using Jetpack Compose.
+- **Depends On**: `ReportCard.kt`, `ReportService.kt`, AppViewModel
+- **Where it will be called**: Manager Navigation Graph
 - **Tasks**:
-    - [ ] Create an Android Top Tabs layout (using `@react-navigation/material-top-tabs`) to toggle between "Employee Reports" and "Vehicle Intake Logs".
+    - [ ] Create a Compose TabRow to toggle between "Employee Reports" and "Vehicle Intake Logs".
     - [ ] Build date filter UI (e.g., "Today", "This Week", "This Month") to pass arguments to the reporting service.
-    - [ ] Map the fetched data to `<ReportCard />` components.
-    - [ ] Add an "Export" or "Print" dummy button (optional, for extra polish).
-    - [ ] Add a Manager Logout button using the global authentication state logic.
+    - [ ] Map the fetched data to `ReportCard` Composables.
+    - [ ] Add an "Export" or "Print" button (optional, for extra polish).
+    - [ ] Add a Manager Logout button using the AppViewModel authentication state logic.
