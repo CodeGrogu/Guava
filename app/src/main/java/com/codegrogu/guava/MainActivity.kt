@@ -14,14 +14,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.codegrogu.guava.service.AuthService
 import com.codegrogu.guava.ui.theme.GuavaTheme
 import com.codegrogu.guava.viewmodel.AppViewModel
 
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModels()
+    private lateinit var authService: AuthService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        authService = AuthService(appViewModel = appViewModel)
+        authService.listenToAuthState()
+
         enableEdgeToEdge()
         setContent {
             GuavaTheme {

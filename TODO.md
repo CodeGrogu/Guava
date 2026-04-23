@@ -40,10 +40,10 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `FirebaseConfig.kt`, AppViewModel
 - **Where it will be called**: LoginScreen Composable, MainActivity
 - **Tasks**:
-    - [ ] Create `loginUser(email: String, password: String)` suspend function using Firebase Auth.
-    - [ ] Create `logoutUser()` function.
-    - [ ] Create `getUserRole(userId: String)` suspend function to fetch the user's role from Firestore.
-    - [ ] Set up an Auth state listener in `AuthService` to persist user login sessions and update the AppViewModel.
+    - [x] Create `loginUser(email: String, password: String)` suspend function using Firebase Auth.
+    - [x] Create `logoutUser()` function.
+    - [x] Create `getUserRole(userId: String)` suspend function to fetch the user's role from Firestore.
+    - [x] Set up an Auth state listener in `AuthService` to persist user login sessions and update the AppViewModel.
 
 ### 4. Login Screen & Main App Navigator
 - **File Name**: `LoginScreen.kt` & `MainActivity.kt`
