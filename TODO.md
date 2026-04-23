@@ -28,10 +28,10 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `build.gradle.kts` (Jetpack Lifecycle/ViewModel dependencies)
 - **Where it will be called**: MainActivity and all Fragments/Composables
 - **Tasks**:
-    - [ ] Add Jetpack Lifecycle and ViewModel dependencies to `build.gradle.kts`.
-    - [ ] Create `AppViewModel` extending `ViewModel` to hold `currentUser` (ID, Name, Email) and `userRole` (Mechanic vs. Manager) as `StateFlow<>` or `LiveData<>`.
-    - [ ] Create functions to update the global state upon successful login/logout.
-    - [ ] Ensure the ViewModel is shared across all screens via the MainActivity.
+    - [x] Add Jetpack Lifecycle and ViewModel dependencies to `build.gradle.kts`.
+    - [x] Create `AppViewModel` extending `ViewModel` to hold `currentUser` (ID, Name, Email) and `userRole` (Mechanic vs. Manager) as `StateFlow<>` or `LiveData<>`.
+    - [x] Create functions to update the global state upon successful login/logout.
+    - [x] Ensure the ViewModel is shared across all screens via the MainActivity.
 
 ### 3. Authentication Service Logic
 - **File Name**: `AuthService.kt`
