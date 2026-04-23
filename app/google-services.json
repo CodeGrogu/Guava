@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "211886765777",
+    "project_id": "studio-1967341697-b5bec",
+    "storage_bucket": "studio-1967341697-b5bec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:211886765777:android:cc8ba28fcdae1fe20337f0",
+        "android_client_info": {
+          "package_name": "com.codegrogu.guava"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnNpziVQb13ZjLBHBplWmlXiyPp5PgmMQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
