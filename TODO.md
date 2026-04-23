@@ -14,12 +14,12 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `build.gradle` (Firebase SDK dependencies)
 - **Where it will be called**: All service classes, MainActivity
 - **Tasks**:
-    - [ ] Create the Firebase project in the Firebase Console (Add an Android App).
-    - [ ] Add Firebase dependencies to `build.gradle.kts` (Firebase Auth, Firestore, Storage).
-    - [ ] **Download `google-services.json` from Firebase Console and add to `android/app/` directory. Update `build.gradle` files.**
-    - [ ] Create `FirebaseConfig.kt` object to initialize Firebase Auth, Firestore, and Storage.
-    - [ ] Explicitly enable Firestore offline persistence/caching to support offline task updates in garage dead zones.
-    - [ ] Expose `auth`, `firestore`, and `storage` references as singleton instances.
+    - [x] Create the Firebase project in the Firebase Console (Add an Android App).
+    - [x] Add Firebase dependencies to `build.gradle.kts` (Firebase Auth, Firestore, Storage).
+    - [x] **Download `google-services.json` from Firebase Console and add to `android/app/` directory. Update `build.gradle` files.**
+    - [x] Create `FirebaseConfig.kt` object to initialize Firebase Auth, Firestore, and Storage.
+    - [x] Explicitly enable Firestore offline persistence/caching to support offline task updates in garage dead zones.
+    - [x] Expose `auth`, `firestore`, and `storage` references as singleton instances.
 
 ### 2. Global State Management Setup
 - **File Name**: `AppViewModel.kt`
