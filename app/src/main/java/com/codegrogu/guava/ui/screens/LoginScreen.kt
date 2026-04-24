@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.sp
 import com.codegrogu.guava.ui.components.GarageBackground
 import com.codegrogu.guava.ui.components.GarageButton
 import com.codegrogu.guava.ui.components.GarageTextField
-import com.codegrogu.guava.ui.theme.IndustrialBlack
 import com.codegrogu.guava.ui.theme.SafetyOrange
 
 @Composable
@@ -43,7 +42,7 @@ fun LoginScreen(
             // "Logo"
             Surface(
                 modifier = Modifier.size(80.dp),
-                color = IndustrialBlack,
+                color = MaterialTheme.colorScheme.onBackground,
                 shape = MaterialTheme.shapes.extraSmall
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -113,7 +112,7 @@ fun LoginScreen(
                     "INITIALIZE NEW ACCOUNT",
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
-                    color = IndustrialBlack
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

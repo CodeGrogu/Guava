@@ -25,7 +25,6 @@ import com.codegrogu.guava.ui.components.GarageBackground
 import com.codegrogu.guava.ui.components.GarageButton
 import com.codegrogu.guava.ui.components.GarageTextField
 import com.codegrogu.guava.ui.components.RoleCard
-import com.codegrogu.guava.ui.theme.IndustrialBlack
 
 @Composable
 fun SignUpScreen(
@@ -140,7 +139,7 @@ fun SignUpScreen(
                     "RETURN TO AUTHORIZATION",
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
-                    color = IndustrialBlack
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
