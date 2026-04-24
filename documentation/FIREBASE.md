@@ -83,9 +83,17 @@ For detailed testing instructions, see the [Testing Guide](file:///C:/Users/Jade
 ## 4. Troubleshooting
 
 - **"File google-services.json is missing"**: Place the file in the root of the `app/` directory.
+- **"Internal Error ... CONFIGURATION_NOT_FOUND"**: This is caused by missing SHA fingerprints in the Firebase Console. Add the SHA-1 and SHA-256 fingerprints generated via `./gradlew signingReport` to your Project Settings.
 - **"Could not find method mapPath()"**: This is an environment-specific Gradle scripting error. Workaround: Run tests via CLI using `./gradlew` with an explicit `JAVA_HOME`.
 - **Persistence Error**: Ensure `firestoreSettings` are applied before any other Firestore operations.
 - **Unresolved Firebase classes**: Perform a **Gradle Sync** to refresh the project dependencies.
+
+## 5. Security & Fingerprints
+
+For local development, the following fingerprints must be registered in the Firebase Console for Authentication and reCAPTCHA to function correctly:
+
+**SHA-1**: `30:3F:01:D8:15:4B:13:75:6A:BF:31:FD:65:E4:AE:14:FD:66:AD:1B`  
+**SHA-256**: `89:B9:61:F8:F8:05:D0:26:2F:88:5D:26:40:A8:50:9B:D5:B6:04:4E:EF:1F:06:6D:86:06:28:52:FC:E4:CC:11`
 
 ## 5. Future Architecture
 While a static `object` is used for simplicity, migrating to **Hilt (Dependency Injection)** is recommended as the project scales to improve testability and modularity.

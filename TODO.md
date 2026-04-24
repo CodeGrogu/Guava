@@ -58,6 +58,17 @@ This document outlines the detailed implementation plan, structured chronologica
     - [ ] Implement conditional navigation logic: AuthGraph (Login), MechanicGraph, or ManagerGraph based on AppViewModel `userRole` and auth status.
     - [ ] Create `AppNavigation` Composable to manage all navigation flows.
 
+### 5. Account Creation & User Registration
+- **File Name**: `SignUpScreen.kt` & `AuthService.kt`
+- **Directory**: `app/src/main/java/com/codegrogu/guava/ui/screens/` and `app/src/main/java/com/codegrogu/guava/service/`
+- **Description**: Logic and UI for new account creation, including role assignment.
+- **Depends On**: `AuthService.kt`, `AppViewModel`
+- **Tasks**:
+    - [ ] Implement `registerUser(email, password, name, role)` in `AuthService.kt`.
+    - [ ] Create `SignUpScreen` Composable with role selection (Mechanic/Manager).
+    - [ ] Add navigation route for `SignUp`.
+    - [ ] Implement validation logic for password complexity and role selection.
+
 ---
 
 ## Phase 2: Vehicle Check-In Module (Priority 2)

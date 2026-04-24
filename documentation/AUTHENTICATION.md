@@ -8,24 +8,45 @@ The `AuthService` handles all interactions with Firebase Authentication and sync
 
 ### Key Functions:
 - **`loginUser(email, password)`**: Performs an asynchronous login. If successful, it automatically fetches the user's role from Firestore and updates the global `AppState`.
+- **`registerUser(email, password, name, role)`**: Creates a new Firebase Auth account and stores the associated user role in Firestore.
 - **`logoutUser()`**: Signs the user out of Firebase and resets the global state.
-- **`listenToAuthState()`**: A listener that monitors the user's session. It ensures that the `AppViewModel` is cleared if the user's token expires or they are signed out from another device.
+- **`listenToAuthState()`**: A listener that monitors the user's session.
 
-## 2. Role-Based Access Control (RBAC)
+## 2. Test Users
 
-User roles are stored in Firestore under the `users` collection. Each document is identified by the user's Firebase UID.
+The following test users are available for evaluation with the password **`P@ssword123`**:
+
+| Role | Email | Name |
+| :--- | :--- | :--- |
+| **Manager** | `manager@guava.com` | Guava Manager |
+| **Mechanic** | `mechanic@guava.com` | Guava Mechanic |
+
+> [!NOTE]
+> These users are seeded during development to ensure consistent role-based testing.
+
+## 2. Role-Based Access Control (RBAC) & Firestore Schema
+
+User data is stored in Firestore to manage roles and display full profile information after authentication.
 
 ### Firestore Schema:
 - **Collection**: `users`
 - **Document ID**: `{firebase_uid}`
 - **Fields**:
+    - `name`: String (User's full name)
+    - `email`: String (User's email address)
     - `role`: String (one of `"MECHANIC"`, `"MANAGER"`)
 
-### Role Resolution Logic:
-1. User logs in via `AuthService`.
-2. `AuthService` fetches the document from Firestore.
-3. The role string is converted to the `UserRole` enum.
-4. The `AppViewModel` is updated with both the `User` object and the resolved `UserRole`.
+### Troubleshooting reCAPTCHA Errors
+
+If you encounter an **"Internal Error: CONFIGURATION_NOT_FOUND"** or persistent reCAPTCHA prompts during login/sign-up, follow these steps to disable enforcement:
+
+1.  **Google Cloud Console**: Go to the [Identity Platform Settings](https://console.cloud.google.com/customer-identity/settings/security).
+2.  **Security Tab**: Locate the **reCAPTCHA bot protection** section.
+3.  **Disable Enforcement**: Change the Enforcement Mode to **OFF**.
+4.  **Authorized Domains**: Ensure your local testing environment (usually `localhost` or specific internal IPs for emulators) is not being aggressively blocked.
+
+> [!IMPORTANT]
+> Disabling reCAPTCHA is recommended for development to avoid complex attestation errors on emulators.
 
 ## 3. Usage in UI
 
