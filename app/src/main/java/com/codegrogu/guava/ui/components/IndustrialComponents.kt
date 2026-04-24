@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -33,9 +34,10 @@ import com.codegrogu.guava.ui.theme.SafetyOrange
 
 @Composable
 fun GarageBackground(modifier: Modifier = Modifier) {
+    val backgroundColor = MaterialTheme.colorScheme.background
     val gridColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f)
     
-    Canvas(modifier = modifier.fillMaxSize()) {
+    Canvas(modifier = modifier.fillMaxSize().background(backgroundColor)) {
         val step = 40.dp.toPx()
         
         // Vertical lines
@@ -71,11 +73,16 @@ fun GarageButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isDark = MaterialTheme.colorScheme.onBackground == Color.White
     
     val offset by animateDpAsState(
         targetValue = if (isPressed) 0.dp else 4.dp,
         label = "ButtonOffset"
     )
+
+    val shadowColor = if (isDark) Color.Black else IndustrialBlack
+    val borderColor = if (isDark) Color.White.copy(alpha = 0.5f) else IndustrialBlack
+    val contentColor = IndustrialBlack // Buttons usually have dark text on bright orange/gray
 
     Box(
         modifier = modifier
@@ -92,7 +99,7 @@ fun GarageButton(
             modifier = Modifier
                 .matchParentSize()
                 .offset(x = 4.dp, y = 4.dp)
-                .background(IndustrialBlack)
+                .background(shadowColor)
         )
         
         // Main Button Surface
@@ -101,14 +108,14 @@ fun GarageButton(
                 .fillMaxWidth()
                 .height(56.dp)
                 .offset(x = -offset + 4.dp, y = -offset + 4.dp)
-                .border(2.dp, IndustrialBlack),
+                .border(2.dp, borderColor),
             color = if (enabled) color else Color.Gray,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = IndustrialBlack,
+                        color = contentColor,
                         strokeWidth = 3.dp
                     )
                 } else {
@@ -118,7 +125,7 @@ fun GarageButton(
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 2.sp,
-                            color = IndustrialBlack
+                            color = contentColor
                         )
                     )
                 }
@@ -162,9 +169,11 @@ fun GarageTextField(
             shape = MaterialTheme.shapes.extraSmall, // More geometric
             leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = IndustrialBlack,
-                unfocusedBorderColor = IndustrialBlack.copy(alpha = 0.3f),
-                cursorColor = IndustrialBlack
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                unfocusedLeadingIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
         )
     }
@@ -178,8 +187,13 @@ fun RoleCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = MaterialTheme.colorScheme.onBackground == Color.White
     val elevation by animateDpAsState(if (selected) 0.dp else 4.dp)
     val color by animateColorAsState(if (selected) SafetyOrange else MaterialTheme.colorScheme.surface)
+    
+    val shadowColor = if (isDark) Color.Black else IndustrialBlack
+    val borderColor = if (isDark && !selected) Color.White.copy(alpha = 0.3f) else IndustrialBlack
+    val contentColor = if (selected) IndustrialBlack else MaterialTheme.colorScheme.onSurface
 
     Box(
         modifier = modifier
@@ -191,7 +205,7 @@ fun RoleCard(
             modifier = Modifier
                 .matchParentSize()
                 .offset(x = 4.dp, y = 4.dp)
-                .background(IndustrialBlack)
+                .background(shadowColor)
         )
         
         Surface(
@@ -199,7 +213,7 @@ fun RoleCard(
                 .fillMaxWidth()
                 .height(100.dp)
                 .offset(x = -elevation + 4.dp, y = -elevation + 4.dp)
-                .border(2.dp, IndustrialBlack),
+                .border(2.dp, borderColor),
             color = color
         ) {
             Column(
@@ -211,7 +225,7 @@ fun RoleCard(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(32.dp),
-                    tint = IndustrialBlack
+                    tint = contentColor
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -219,7 +233,7 @@ fun RoleCard(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
-                        color = IndustrialBlack
+                        color = contentColor
                     )
                 )
             }
