@@ -16,10 +16,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,7 +47,7 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `getUserRole returns correct role from firestore`() = runTest {
+    fun `getUserData returns correct user and role from firestore`() = runTest {
         val userId = "testId"
         val mockCollection = mock(CollectionReference::class.java)
         val mockDocument = mock(DocumentReference::class.java)
@@ -60,15 +60,19 @@ class AuthServiceTest {
         whenever(mockTask.isComplete).thenReturn(true)
         whenever(mockTask.isSuccessful).thenReturn(true)
         whenever(mockTask.result).thenReturn(mockSnapshot)
+        whenever(mockSnapshot.getString("name")).thenReturn("Test Name")
+        whenever(mockSnapshot.getString("email")).thenReturn("test@test.com")
         whenever(mockSnapshot.getString("role")).thenReturn("MECHANIC")
 
-        val role = authService.getUserRole(userId)
+        val (user, role) = authService.getUserData(userId)
         
+        assertEquals("Test Name", user?.name)
+        assertEquals("test@test.com", user?.email)
         assertEquals(UserRole.MECHANIC, role)
     }
 
     @Test
-    fun `loginUser success updates appViewModel`() = runTest {
+    fun `loginUser success updates appViewModel with full data`() = runTest {
         val email = "test@example.com"
         val password = "password"
         val userId = "uid123"
@@ -83,9 +87,8 @@ class AuthServiceTest {
         whenever(mockAuthTask.result).thenReturn(mockAuthResult)
         whenever(mockAuthResult.user).thenReturn(mockFirebaseUser)
         whenever(mockFirebaseUser.uid).thenReturn(userId)
-        whenever(mockFirebaseUser.email).thenReturn(email)
         
-        // Mock role fetching
+        // Mock full data fetching
         val mockCollection = mock(CollectionReference::class.java)
         val mockDocument = mock(DocumentReference::class.java)
         val mockDocTask = mock(Task::class.java) as Task<DocumentSnapshot>
@@ -97,11 +100,53 @@ class AuthServiceTest {
         whenever(mockDocTask.isComplete).thenReturn(true)
         whenever(mockDocTask.isSuccessful).thenReturn(true)
         whenever(mockDocTask.result).thenReturn(mockSnapshot)
+        whenever(mockSnapshot.getString("name")).thenReturn("Manager User")
         whenever(mockSnapshot.getString("role")).thenReturn("MANAGER")
 
         val result = authService.loginUser(email, password)
         
         assertTrue(result.isSuccess)
-        verify(appViewModel).updateUser(any(), any())
+        verify(appViewModel).updateUser(any(), eq(UserRole.MANAGER))
+    }
+
+    @Test
+    fun `registerUser success stores full profile and updates appViewModel`() = runTest {
+        val email = "new@example.com"
+        val password = "password"
+        val name = "New User"
+        val userId = "newUid"
+        val role = UserRole.MECHANIC
+        
+        val mockAuthTask = mock(Task::class.java) as Task<AuthResult>
+        val mockAuthResult = mock(AuthResult::class.java)
+        val mockFirebaseUser = mock(FirebaseUser::class.java)
+        
+        whenever(auth.createUserWithEmailAndPassword(email, password)).thenReturn(mockAuthTask)
+        whenever(mockAuthTask.isComplete).thenReturn(true)
+        whenever(mockAuthTask.isSuccessful).thenReturn(true)
+        whenever(mockAuthTask.result).thenReturn(mockAuthResult)
+        whenever(mockAuthResult.user).thenReturn(mockFirebaseUser)
+        whenever(mockFirebaseUser.uid).thenReturn(userId)
+        
+        val mockCollection = mock(CollectionReference::class.java)
+        val mockDocument = mock(DocumentReference::class.java)
+        val mockSetTask = mock(Task::class.java) as Task<Void>
+        
+        whenever(firestore.collection("users")).thenReturn(mockCollection)
+        whenever(mockCollection.document(userId)).thenReturn(mockDocument)
+        whenever(mockDocument.set(any())).thenReturn(mockSetTask)
+        whenever(mockSetTask.isComplete).thenReturn(true)
+        whenever(mockSetTask.isSuccessful).thenReturn(true)
+
+        val result = authService.registerUser(email, password, name, role)
+        
+        assertTrue(result.isSuccess)
+        // Verify that set() was called with a map containing all fields
+        verify(mockDocument).set(mapOf(
+            "name" to name,
+            "email" to email,
+            "role" to role.name
+        ))
+        verify(appViewModel).updateUser(any(), eq(role))
     }
 }
