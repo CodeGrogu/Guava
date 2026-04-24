@@ -8,62 +8,102 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
-class AuthService(
+open class AuthService(
     private val auth: FirebaseAuth = FirebaseConfig.auth,
     private val firestore: FirebaseFirestore = FirebaseConfig.firestore,
     private val appViewModel: AppViewModel
 ) {
 
-    suspend fun loginUser(email: String, password: String): Result<User> {
+    open suspend fun loginUser(email: String, password: String): Result<User> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user ?: throw Exception("User not found after login")
             
-            val user = User(
+            val (user, role) = getUserData(firebaseUser.uid)
+            val finalUser = user ?: User(
                 id = firebaseUser.uid,
                 name = firebaseUser.displayName ?: "User",
                 email = firebaseUser.email ?: email
             )
             
-            val role = getUserRole(user.id)
-            appViewModel.updateUser(user, role)
+            appViewModel.updateUser(finalUser, role)
             
+            Result.success(finalUser)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    open suspend fun registerUser(email: String, password: String, name: String, role: UserRole): Result<User> {
+        return try {
+            val result = auth.createUserWithEmailAndPassword(email, password).await()
+            val firebaseUser = result.user ?: throw Exception("User creation failed")
+            
+            val user = User(
+                id = firebaseUser.uid,
+                name = name,
+                email = email
+            )
+            
+            // Store full user profile in Firestore
+            firestore.collection("users").document(user.id).set(
+                mapOf(
+                    "name" to name,
+                    "email" to email,
+                    "role" to role.name
+                )
+            ).await()
+            
+            appViewModel.updateUser(user, role)
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    fun logoutUser() {
+    open suspend fun seedTestUsers() {
+        val users = listOf(
+            Triple("manager@guava.com", "Guava Manager", UserRole.MANAGER),
+            Triple("mechanic@guava.com", "Guava Mechanic", UserRole.MECHANIC)
+        )
+        
+        users.forEach { (email, name, role) ->
+            registerUser(email, "P@ssword123", name, role)
+        }
+    }
+
+    open fun logoutUser() {
         auth.signOut()
         appViewModel.clearState()
     }
 
-    suspend fun getUserRole(userId: String): UserRole {
+    open suspend fun getUserData(userId: String): Pair<User?, UserRole> {
         return try {
             val document = firestore.collection("users").document(userId).get().await()
+            val name = document.getString("name") ?: "User"
+            val email = document.getString("email") ?: ""
             val roleString = document.getString("role")
-            when (roleString?.uppercase()) {
+            
+            val user = User(userId, name, email)
+            val role = when (roleString?.uppercase()) {
                 "MECHANIC" -> UserRole.MECHANIC
                 "MANAGER" -> UserRole.MANAGER
                 else -> UserRole.UNKNOWN
             }
+            Pair(user, role)
         } catch (e: Exception) {
-            UserRole.UNKNOWN
+            Pair(null, UserRole.UNKNOWN)
         }
     }
 
-    fun listenToAuthState() {
+    open fun listenToAuthState() {
         auth.addAuthStateListener { firebaseAuth ->
             val firebaseUser = firebaseAuth.currentUser
             if (firebaseUser != null) {
-                // We have a user, but we might not have their role yet
-                // In a real app, you might want to launch a coroutine here to fetch the role
-                // For simplicity in this setup, we'll just check if the state is already set
+                // If the app is already showing a user, we don't need to do anything
                 if (appViewModel.uiState.value.currentUser == null) {
-                    // This listener is synchronous, but role fetching is async.
-                    // We'll rely on the manual login to set the role, 
-                    // and handle session restoration in the UI/ViewModel if needed.
+                    // In a production app, we would launch a coroutine to fetch full user data
+                    // For now, we rely on the manual login/register to set the full profile
                 }
             } else {
                 appViewModel.clearState()
