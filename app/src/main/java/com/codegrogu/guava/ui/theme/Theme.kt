@@ -2,6 +2,7 @@ package com.codegrogu.guava.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -13,8 +14,8 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = WarningAmber,
     background = OilCharcoalDark,
     surface = OilCharcoalDark,
-    onPrimary = OilCharcoalDark,
-    onSecondary = OilCharcoalDark,
+    onPrimary = IndustrialBlack,
+    onSecondary = IndustrialBlack,
     onBackground = Color.White,
     onSurface = Color.White,
     error = ErrorRed
@@ -45,7 +46,11 @@ fun GuavaTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+        typography = Typography
+    ) {
+        Surface(
+            color = colorScheme.background,
+            content = content
+        )
+    }
 }
