@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.codegrogu.guava.service.AuthService
+import com.codegrogu.guava.ui.navigation.AppNavigation
 import com.codegrogu.guava.ui.theme.GuavaTheme
 import com.codegrogu.guava.viewmodel.AppViewModel
 
@@ -31,14 +32,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GuavaTheme {
-                val uiState by appViewModel.uiState.collectAsState()
-                
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = uiState.currentUser?.name ?: "Guest",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                AppNavigation(
+                    appViewModel = appViewModel,
+                    authService = authService
+                )
             }
         }
     }
