@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,7 +25,7 @@ import com.codegrogu.guava.ui.theme.SafetyOrange
 fun LoginScreen(
     onLoginSuccess: (String, String) -> Unit,
     isLoading: Boolean = false,
-    onNavigateToSignUp: () -> Unit
+    onNavigateToSignUp: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -79,6 +80,7 @@ fun LoginScreen(
                 onValueChange = { email = it },
                 label = "Terminal ID (Email)",
                 leadingIcon = Icons.Default.Email,
+                fieldTag = "LoginEmailField",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
 
@@ -89,6 +91,7 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 label = "Passcode",
                 leadingIcon = Icons.Default.Lock,
+                fieldTag = "LoginPasswordField",
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
@@ -98,7 +101,9 @@ fun LoginScreen(
             GarageButton(
                 text = "Authorize",
                 onClick = { onLoginSuccess(email, password) },
+                modifier = Modifier.testTag("LoginSubmitButton"),
                 isLoading = isLoading,
+                loadingIndicatorTag = "LoginLoadingIndicator",
                 enabled = email.isNotBlank() && password.isNotBlank()
             )
 
