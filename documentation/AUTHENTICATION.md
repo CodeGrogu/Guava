@@ -48,7 +48,7 @@ If you encounter an **"Internal Error: CONFIGURATION_NOT_FOUND"** or persistent 
 > [!IMPORTANT]
 > Disabling reCAPTCHA is recommended for development to avoid complex attestation errors on emulators.
 
-## 3. Usage in UI
+## 4. Usage in UI
 
 In Compose, you can access the current user and their role by collecting the state from `AppViewModel`:
 
@@ -66,7 +66,7 @@ if (uiState.currentUser != null) {
 }
 ```
 
-## 4. Security
+## 5. Security
 
 - **Persistence**: Auth state is persisted by Firebase by default.
 - **Firestore Rules**: Ensure that Firestore rules allow users to read their own document in the `users` collection:
