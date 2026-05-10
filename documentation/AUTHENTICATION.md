@@ -14,17 +14,17 @@ The `AuthService` handles all interactions with Firebase Authentication and sync
 
 ## 2. Test Users
 
-The following test users are available for evaluation with the password **`P@ssword123`**:
+The following test users are available for evaluation with the password **`123QWE!@#qwe`**:
 
 | Role | Email | Name |
 | :--- | :--- | :--- |
-| **Manager** | `manager@guava.com` | Guava Manager |
-| **Mechanic** | `mechanic@guava.com` | Guava Mechanic |
+| **Manager** | `manager@valentine.com` | Valentine Manager |
+| **Mechanic** | `testmechanic@valetine.com` | Test Mechanic |
 
 > [!NOTE]
-> These users are seeded during development to ensure consistent role-based testing.
+> These accounts are available in Firebase for role-based evaluation.
 
-## 2. Role-Based Access Control (RBAC) & Firestore Schema
+## 3. Role-Based Access Control (RBAC) & Firestore Schema
 
 User data is stored in Firestore to manage roles and display full profile information after authentication.
 

@@ -10,3 +10,12 @@ going undone, as one employee may leave them thinking another colleague did them
 Valentine should be able to see reports on what each employee did and the condition
 of the vehicles when they were checked in. The assessment rubric in Table 1 will be
 used to grade the assignment.
+
+## Test Users
+
+Use these Firebase accounts for evaluation:
+
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| Manager | `manager@valentine.com` | `123QWE!@#qwe` |
+| Mechanic | `testmechanic@valetine.com` | `123QWE!@#qwe` |
