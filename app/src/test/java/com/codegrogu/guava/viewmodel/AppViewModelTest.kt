@@ -38,7 +38,7 @@ class AppViewModelTest {
     }
 
     @Test
-    fun `showSnackbar emits UiEvent correctly`() = runTest {
+    fun `showSnackbar emits plain snackbar event correctly`() = runTest {
         val viewModel = AppViewModel()
         val message = "Error occurred"
         

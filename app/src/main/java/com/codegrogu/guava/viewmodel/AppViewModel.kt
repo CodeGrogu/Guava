@@ -1,7 +1,5 @@
 package com.codegrogu.guava.viewmodel
 
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarVisuals
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codegrogu.guava.model.User
@@ -18,13 +16,9 @@ data class AppState(
 
 sealed class UiEvent {
     data class ShowSnackbar(
-        override val message: String,
+        val message: String,
         val isError: Boolean = true
-    ) : UiEvent(), SnackbarVisuals {
-        override val actionLabel: String? = null
-        override val duration: SnackbarDuration = SnackbarDuration.Short
-        override val withDismissAction: Boolean = true
-    }
+    ) : UiEvent()
 }
 
 class AppViewModel : ViewModel() {

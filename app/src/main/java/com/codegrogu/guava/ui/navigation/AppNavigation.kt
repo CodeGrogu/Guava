@@ -30,7 +30,7 @@ fun AppNavigation(
         appViewModel.uiEvents.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event)
+                    snackbarHostState.showSnackbar(event.toSnackbarVisuals())
                 }
             }
         }
@@ -39,7 +39,7 @@ fun AppNavigation(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                val visuals = data.visuals as? UiEvent.ShowSnackbar
+                val visuals = data.visuals as? AppSnackbarVisuals
                 val isError = visuals?.isError ?: true
                 
                 Snackbar(

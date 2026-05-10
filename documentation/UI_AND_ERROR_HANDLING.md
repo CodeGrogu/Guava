@@ -39,7 +39,7 @@ if (result.isFailure) {
 ```
 
 ### Technical Details:
-- **`SnackbarVisuals` Integration**: The `UiEvent.ShowSnackbar` class implements the Material 3 `SnackbarVisuals` interface directly, allowing it to be passed into `hostState.showSnackbar()`.
+- **Plain UI Events**: `UiEvent.ShowSnackbar` only carries `message` and `isError`; `AppNavigation` adapts it to Material 3 `SnackbarVisuals` before display.
 - **Consistency**: All auth-related errors are now displayed through this global system instead of local text fields.
 
 ---
