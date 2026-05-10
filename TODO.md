@@ -52,11 +52,11 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `AuthService.kt`, AppViewModel
 - **Where it will be called**: AppNavigation Composable
 - **Tasks**:
-    - [ ] Add Jetpack Compose and Navigation dependencies to `build.gradle.kts`.
-    - [ ] Create `LoginScreen` Composable with Email/Password inputs, Login button, loading state, and error handling.
-    - [ ] Set up Navigation Graph with root navigation controller.
-    - [ ] Implement conditional navigation logic: AuthGraph (Login), MechanicGraph, or ManagerGraph based on AppViewModel `userRole` and auth status.
-    - [ ] Create `AppNavigation` Composable to manage all navigation flows.
+    - [x] Add Jetpack Compose and Navigation dependencies to `build.gradle.kts`.
+    - [x] Create `LoginScreen` Composable with Email/Password inputs, Login button, loading state, and error handling.
+    - [x] Set up Navigation Graph with root navigation controller.
+    - [x] Implement conditional navigation logic: AuthGraph (Login), MechanicGraph, or ManagerGraph based on AppViewModel `userRole` and auth status.
+    - [x] Create `AppNavigation` Composable to manage all navigation flows.
 
 ### 5. Account Creation & User Registration
 - **File Name**: `SignUpScreen.kt` & `AuthService.kt`
@@ -64,10 +64,10 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Description**: Logic and UI for new account creation, including role assignment.
 - **Depends On**: `AuthService.kt`, `AppViewModel`
 - **Tasks**:
-    - [ ] Implement `registerUser(email, password, name, role)` in `AuthService.kt`.
-    - [ ] Create `SignUpScreen` Composable with role selection (Mechanic/Manager).
-    - [ ] Add navigation route for `SignUp`.
-    - [ ] Implement validation logic for password complexity and role selection.
+    - [x] Implement `registerUser(email, password, name, role)` in `AuthService.kt`.
+    - [x] Create `SignUpScreen` Composable with role selection (Mechanic/Manager).
+    - [x] Add navigation route for `SignUp`.
+    - [x] Implement validation logic for password complexity and role selection.
 
 ---
 

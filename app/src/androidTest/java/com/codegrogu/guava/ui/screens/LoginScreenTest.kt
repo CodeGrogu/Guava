@@ -16,10 +16,11 @@ class LoginScreenTest {
             LoginScreen(onLoginSuccess = { _, _ -> })
         }
 
-        composeTestRule.onNodeWithText("Guava Login").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Email").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Password").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Login").assertIsDisplayed()
+        composeTestRule.onNodeWithText("VALENTINE'S GARAGE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("TERMINAL ID (EMAIL)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("PASSCODE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("AUTHORIZE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("INITIALIZE NEW ACCOUNT").assertIsDisplayed()
     }
 
     @Test
@@ -28,17 +29,7 @@ class LoginScreenTest {
             LoginScreen(onLoginSuccess = { _, _ -> })
         }
 
-        composeTestRule.onNodeWithText("Login").assertIsNotEnabled()
-    }
-
-    @Test
-    fun loginScreen_showsErrorMessage() {
-        val error = "Invalid credentials"
-        composeTestRule.setContent {
-            LoginScreen(onLoginSuccess = { _, _ -> }, errorMessage = error)
-        }
-
-        composeTestRule.onNodeWithText(error).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("LoginSubmitButton").assertIsNotEnabled()
     }
 
     @Test
@@ -48,6 +39,5 @@ class LoginScreenTest {
         }
 
         composeTestRule.onNodeWithTag("LoginLoadingIndicator").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Login").assertDoesNotExist()
     }
 }

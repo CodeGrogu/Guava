@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,17 +26,29 @@ import com.codegrogu.guava.ui.components.GarageBackground
 import com.codegrogu.guava.ui.components.GarageButton
 import com.codegrogu.guava.ui.components.GarageTextField
 import com.codegrogu.guava.ui.components.RoleCard
+import com.codegrogu.guava.util.ValidationUtils
 
 @Composable
 fun SignUpScreen(
     onSignUp: (String, String, String, UserRole) -> Unit,
     isLoading: Boolean = false,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf(UserRole.MECHANIC) }
+    var role by remember { mutableStateOf<UserRole?>(null) }
+
+    val trimmedName = name.trim()
+    val trimmedEmail = email.trim()
+    val showNameError = name.isNotBlank() && !ValidationUtils.isValidName(trimmedName)
+    val showEmailError = email.isNotBlank() && !ValidationUtils.isValidEmail(trimmedEmail)
+    val showPasswordError = password.isNotBlank() && !ValidationUtils.isValidPassword(password)
+    val showRoleError = role == null && name.isNotBlank() && email.isNotBlank() && password.isNotBlank()
+    val isFormValid = ValidationUtils.isValidName(trimmedName) &&
+        ValidationUtils.isValidEmail(trimmedEmail) &&
+        ValidationUtils.isValidPassword(password) &&
+        role != null
 
     Box(modifier = Modifier.fillMaxSize()) {
         GarageBackground()
@@ -68,7 +81,13 @@ fun SignUpScreen(
                 value = name,
                 onValueChange = { name = it },
                 label = "Full Identifier (Name)",
+                isError = showNameError,
+                fieldTag = "SignUpNameField",
                 leadingIcon = Icons.Default.Person
+            )
+            ValidationMessage(
+                message = "Enter a first and last name.",
+                visible = showNameError
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -78,7 +97,13 @@ fun SignUpScreen(
                 onValueChange = { email = it },
                 label = "Comms Address (Email)",
                 leadingIcon = Icons.Default.Email,
+                isError = showEmailError,
+                fieldTag = "SignUpEmailField",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            )
+            ValidationMessage(
+                message = "Enter a valid email address.",
+                visible = showEmailError
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -88,8 +113,14 @@ fun SignUpScreen(
                 onValueChange = { password = it },
                 label = "Access Code",
                 leadingIcon = Icons.Default.Lock,
+                isError = showPasswordError,
+                fieldTag = "SignUpPasswordField",
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            )
+            ValidationMessage(
+                message = "Password must be 8+ chars with upper, lower, and digit.",
+                visible = showPasswordError
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -108,7 +139,9 @@ fun SignUpScreen(
                     icon = Icons.Default.Build,
                     selected = role == UserRole.MECHANIC,
                     onClick = { role = UserRole.MECHANIC },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("MechanicRoleCard")
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 RoleCard(
@@ -116,17 +149,31 @@ fun SignUpScreen(
                     icon = Icons.AutoMirrored.Filled.Assignment,
                     selected = role == UserRole.MANAGER,
                     onClick = { role = UserRole.MANAGER },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("ManagerRoleCard")
                 )
             }
+            ValidationMessage(
+                message = "Select Mechanic or Manager.",
+                visible = showRoleError
+            )
 
             Spacer(modifier = Modifier.height(48.dp))
 
             GarageButton(
                 text = "Initialize",
-                onClick = { onSignUp(email, password, name, role) },
+                onClick = {
+                    role?.let { selectedRole ->
+                        if (isFormValid) {
+                            onSignUp(trimmedEmail, password, trimmedName, selectedRole)
+                        }
+                    }
+                },
+                modifier = Modifier.testTag("SignUpSubmitButton"),
                 isLoading = isLoading,
-                enabled = email.isNotBlank() && password.isNotBlank() && name.isNotBlank()
+                loadingIndicatorTag = "SignUpLoadingIndicator",
+                enabled = isFormValid
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -144,4 +191,18 @@ fun SignUpScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ValidationMessage(message: String, visible: Boolean) {
+    if (!visible) return
+
+    Text(
+        text = message,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp)
+    )
 }

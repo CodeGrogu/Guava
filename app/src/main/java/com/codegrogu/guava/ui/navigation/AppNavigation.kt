@@ -11,7 +11,9 @@ fun AppNavigation(
     LaunchedEffect(Unit) {
         appViewModel.uiEvents.collect { event ->
             when (event) {
-                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event)
+                is UiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event)
+                }
             }
         }
     }
@@ -19,7 +21,7 @@ fun AppNavigation(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                val visuals = data.visuals as? UiEvent.ShowSnackbar
+                val visuals = data.visuals as? AppSnackbarVisuals
                 val isError = visuals?.isError ?: true
                 Snackbar(
                     snackbarData = data,
@@ -39,15 +41,20 @@ fun AppNavigation(
                     onLoginSuccess = { email, password ->
                         scope.launch {
                             appViewModel.setLoading(true)
-                            val result = authService.loginUser(email, password)
-                            if (result.isFailure) {
-                                appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Login Failed")
+                            try {
+                                val result = authService.loginUser(email, password)
+                                if (result.isFailure) {
+                                    appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Login Failed")
+                                }
+                            } finally {
+                                appViewModel.setLoading(false)
                             }
-                            appViewModel.setLoading(false)
                         }
                     },
                     isLoading = uiState.isLoading,
-                    onNavigateToSignUp = { navController.navigate(Destination.SignUp) }
+                    onNavigateToSignUp = {
+                        navController.navigate(Destination.SignUp)
+                    }
                 )
             }
 
@@ -61,15 +68,16 @@ fun AppNavigation(
                                 appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Registration Failed")
                             } else {
                                 appViewModel.showSnackbar("Account created successfully!", isError = false)
-                                navController.navigate(Destination.Login) {
-                                    popUpTo(Destination.SignUp) { inclusive = true }
-                                }
                             }
                             appViewModel.setLoading(false)
                         }
                     },
                     isLoading = uiState.isLoading,
-                    onNavigateToLogin = { navController.popBackStack() }
+                    onNavigateToLogin = {
+                        navController.navigate(Destination.Login) {
+                            popUpTo(Destination.Login) { inclusive = true }
+                        }
+                    }
                 )
             }
 
@@ -101,19 +109,21 @@ fun AppNavigation(
         }
     }
 
-    // Auth Watcher: Moves user to dashboard upon login
+    // Role-based navigation reaction
     LaunchedEffect(uiState.currentUser, uiState.userRole) {
-        val user = uiState.currentUser
-        if (user != null) {
-            val target = when (uiState.userRole) {
-                UserRole.MECHANIC -> Destination.MechanicDashboard
-                UserRole.MANAGER -> Destination.ManagerDashboard
-                else -> null
-            }
-            target?.let {
-                navController.navigate(it) {
-                    popUpTo(Destination.Login) { inclusive = true }
+        if (uiState.currentUser != null) {
+            when (uiState.userRole) {
+                UserRole.MECHANIC -> {
+                    navController.navigate(Destination.MechanicDashboard) {
+                        popUpTo(Destination.Login) { inclusive = true }
+                    }
                 }
+                UserRole.MANAGER -> {
+                    navController.navigate(Destination.ManagerDashboard) {
+                        popUpTo(Destination.Login) { inclusive = true }
+                    }
+                }
+                else -> {}
             }
         }
     }

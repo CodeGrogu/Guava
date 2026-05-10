@@ -6,6 +6,8 @@ import com.codegrogu.guava.model.UserRole
 import com.codegrogu.guava.viewmodel.AppViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 open class AuthService(
@@ -61,17 +63,6 @@ open class AuthService(
         }
     }
 
-    open suspend fun seedTestUsers() {
-        val users = listOf(
-            Triple("manager@guava.com", "Guava Manager", UserRole.MANAGER),
-            Triple("mechanic@guava.com", "Guava Mechanic", UserRole.MECHANIC)
-        )
-        
-        users.forEach { (email, name, role) ->
-            registerUser(email, "P@ssword123", name, role)
-        }
-    }
-
     open fun logoutUser() {
         auth.signOut()
         appViewModel.clearState()
@@ -96,14 +87,29 @@ open class AuthService(
         }
     }
 
-    open fun listenToAuthState() {
+    open fun listenToAuthState(scope: CoroutineScope) {
         auth.addAuthStateListener { firebaseAuth ->
             val firebaseUser = firebaseAuth.currentUser
             if (firebaseUser != null) {
-                // If the app is already showing a user, we don't need to do anything
-                if (appViewModel.uiState.value.currentUser == null) {
-                    // In a production app, we would launch a coroutine to fetch full user data
-                    // For now, we rely on the manual login/register to set the full profile
+                val state = appViewModel.uiState.value
+                if (state.isLoading) return@addAuthStateListener
+                if (state.currentUser?.id == firebaseUser.uid && state.userRole != UserRole.UNKNOWN) {
+                    return@addAuthStateListener
+                }
+
+                appViewModel.setLoading(true)
+                scope.launch {
+                    val (storedUser, role) = getUserData(firebaseUser.uid)
+                    val user = storedUser ?: User(
+                        id = firebaseUser.uid,
+                        name = firebaseUser.displayName ?: "User",
+                        email = firebaseUser.email ?: ""
+                    )
+
+                    appViewModel.updateUser(user, role)
+                    if (role == UserRole.UNKNOWN) {
+                        appViewModel.showSnackbar("User role not found")
+                    }
                 }
             } else {
                 appViewModel.clearState()

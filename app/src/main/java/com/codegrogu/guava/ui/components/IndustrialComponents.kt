@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -69,6 +70,7 @@ fun GarageButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
+    loadingIndicatorTag: String? = null,
     color: Color = SafetyOrange
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -114,7 +116,15 @@ fun GarageButton(
             Box(contentAlignment = Alignment.Center) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier
+                            .size(24.dp)
+                            .then(
+                                if (loadingIndicatorTag != null) {
+                                    Modifier.testTag(loadingIndicatorTag)
+                                } else {
+                                    Modifier
+                                }
+                            ),
                         color = contentColor,
                         strokeWidth = 3.dp
                     )
@@ -142,6 +152,7 @@ fun GarageTextField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isError: Boolean = false,
+    fieldTag: String? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     leadingIcon: ImageVector? = null
@@ -160,7 +171,15 @@ fun GarageTextField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (fieldTag != null) {
+                        Modifier.testTag(fieldTag)
+                    } else {
+                        Modifier
+                    }
+                ),
             enabled = enabled,
             isError = isError,
             visualTransformation = visualTransformation,

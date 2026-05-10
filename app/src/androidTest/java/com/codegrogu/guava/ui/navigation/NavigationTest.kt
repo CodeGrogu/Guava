@@ -31,7 +31,18 @@ class NavigationTest {
             AppNavigation(appViewModel = appViewModel, authService = authService)
         }
 
-        composeTestRule.onNodeWithText("Guava Login").assertIsDisplayed()
+        composeTestRule.onNodeWithText("VALENTINE'S GARAGE").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigation_navigatesToSignUpFromLogin() {
+        composeTestRule.setContent {
+            AppNavigation(appViewModel = appViewModel, authService = authService)
+        }
+
+        composeTestRule.onNodeWithText("INITIALIZE NEW ACCOUNT").performClick()
+
+        composeTestRule.onNodeWithText("NEW REGISTRATION").assertIsDisplayed()
     }
 
     @Test
