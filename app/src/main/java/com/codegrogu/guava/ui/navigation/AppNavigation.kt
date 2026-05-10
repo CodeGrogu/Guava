@@ -60,16 +60,21 @@ fun AppNavigation(
                     onLoginSuccess = { email, password ->
                         scope.launch {
                             appViewModel.setLoading(true)
-                            val result = authService.loginUser(email, password)
-                            if (result.isFailure) {
-                                appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Login Failed")
+                            try {
+                                val result = authService.loginUser(email, password)
+                                if (result.isFailure) {
+                                    appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Login Failed")
+                                }
+                            } finally {
+                                appViewModel.setLoading(false)
                             }
-                            appViewModel.setLoading(false)
                         }
                     },
                     isLoading = uiState.isLoading,
                     onNavigateToSignUp = {
-                        navController.navigate(Destination.SignUp)
+                        navController.navigate(Destination.SignUp) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -79,19 +84,23 @@ fun AppNavigation(
                     onSignUp = { email, password, name, role ->
                         scope.launch {
                             appViewModel.setLoading(true)
-                            val result = authService.registerUser(email, password, name, role)
-                            if (result.isFailure) {
-                                appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Registration Failed")
-                            } else {
-                                appViewModel.showSnackbar("Account created successfully!", isError = false)
+                            try {
+                                val result = authService.registerUser(email, password, name, role)
+                                if (result.isFailure) {
+                                    appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Registration Failed")
+                                } else {
+                                    appViewModel.showSnackbar("Account created successfully!", isError = false)
+                                }
+                            } finally {
+                                appViewModel.setLoading(false)
                             }
-                            appViewModel.setLoading(false)
                         }
                     },
                     isLoading = uiState.isLoading,
                     onNavigateToLogin = {
                         navController.navigate(Destination.Login) {
                             popUpTo(Destination.Login) { inclusive = true }
+                            launchSingleTop = true
                         }
                     }
                 )
@@ -112,21 +121,40 @@ fun AppNavigation(
     }
 
     // Role-based navigation reaction
-    LaunchedEffect(uiState.currentUser, uiState.userRole) {
-        if (uiState.currentUser != null) {
-            when (uiState.userRole) {
-                UserRole.MECHANIC -> {
-                    navController.navigate(Destination.MechanicDashboard) {
-                        popUpTo(Destination.Login) { inclusive = true }
-                    }
+    LaunchedEffect(uiState.currentUser?.id, uiState.userRole) {
+        when {
+            uiState.currentUser == null -> {
+                navController.navigate(Destination.Login) {
+                    launchSingleTop = true
                 }
-                UserRole.MANAGER -> {
-                    navController.navigate(Destination.ManagerDashboard) {
-                        popUpTo(Destination.Login) { inclusive = true }
-                    }
+            }
+            uiState.userRole == UserRole.MECHANIC -> {
+                navController.navigate(Destination.MechanicDashboard) {
+                    popUpTo(Destination.Login) { inclusive = true }
+                    launchSingleTop = true
                 }
-                else -> {}
+            }
+            uiState.userRole == UserRole.MANAGER -> {
+                navController.navigate(Destination.ManagerDashboard) {
+                    popUpTo(Destination.Login) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
         }
     }
+}
+
+private data class AppSnackbarVisuals(
+    override val message: String,
+    val isError: Boolean,
+    override val actionLabel: String? = null,
+    override val duration: SnackbarDuration = SnackbarDuration.Short,
+    override val withDismissAction: Boolean = true
+) : SnackbarVisuals
+
+private fun UiEvent.ShowSnackbar.toSnackbarVisuals(): SnackbarVisuals {
+    return AppSnackbarVisuals(
+        message = message,
+        isError = isError
+    )
 }
