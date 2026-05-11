@@ -18,6 +18,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Force IPv4 for emulator compatibility
+        System.setProperty("java.net.preferIPv4Stack", "true")
+        System.setProperty("java.net.preferIPv6Addresses", "false")
+        
         authService = AuthService(appViewModel = appViewModel)
         authService.listenToAuthState(lifecycleScope)
 
