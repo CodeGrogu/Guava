@@ -5,6 +5,8 @@ import com.codegrogu.guava.model.User
 import com.codegrogu.guava.model.UserRole
 import com.codegrogu.guava.viewmodel.AppViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -21,7 +23,13 @@ open class AuthService(
             val result = auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user ?: throw Exception("User not found after login")
             
-            val (user, role) = getUserData(firebaseUser.uid)
+            val (user, role) = getUserData(firebaseUser)
+            if (role == UserRole.UNKNOWN) {
+                auth.signOut()
+                appViewModel.clearState()
+                throw Exception("User role not found. Contact an administrator to finish account setup.")
+            }
+
             val finalUser = user ?: User(
                 id = firebaseUser.uid,
                 name = firebaseUser.displayName ?: "User",
@@ -69,22 +77,38 @@ open class AuthService(
     }
 
     open suspend fun getUserData(userId: String): Pair<User?, UserRole> {
-        return try {
-            val document = firestore.collection("users").document(userId).get().await()
-            val name = document.getString("name") ?: "User"
-            val email = document.getString("email") ?: ""
-            val roleString = document.getString("role")
-            
-            val user = User(userId, name, email)
-            val role = when (roleString?.uppercase()) {
-                "MECHANIC" -> UserRole.MECHANIC
-                "MANAGER" -> UserRole.MANAGER
-                else -> UserRole.UNKNOWN
-            }
-            Pair(user, role)
-        } catch (e: Exception) {
-            Pair(null, UserRole.UNKNOWN)
+        return getUserData(userId, null)
+    }
+
+    private suspend fun getUserData(firebaseUser: FirebaseUser): Pair<User?, UserRole> {
+        return getUserData(firebaseUser.uid, firebaseUser.email)
+    }
+
+    private suspend fun getUserData(userId: String, email: String?): Pair<User?, UserRole> {
+        val usersCollection = firestore.collection("users")
+        val uidDocument = usersCollection.document(userId).get().await()
+
+        val uidResult = uidDocument.toUserAndRole(userId, email.orEmpty())
+        if (uidResult.second != UserRole.UNKNOWN) {
+            return uidResult
         }
+
+        if (!email.isNullOrBlank()) {
+            val emailDocument = usersCollection
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .await()
+                .documents
+                .firstOrNull()
+
+            val emailResult = emailDocument?.toUserAndRole(userId, email)
+            if (emailResult != null && emailResult.second != UserRole.UNKNOWN) {
+                return emailResult
+            }
+        }
+
+        return Pair(User(userId, "User", email.orEmpty()), UserRole.UNKNOWN)
     }
 
     open fun listenToAuthState(scope: CoroutineScope) {
@@ -99,21 +123,53 @@ open class AuthService(
 
                 appViewModel.setLoading(true)
                 scope.launch {
-                    val (storedUser, role) = getUserData(firebaseUser.uid)
-                    val user = storedUser ?: User(
-                        id = firebaseUser.uid,
-                        name = firebaseUser.displayName ?: "User",
-                        email = firebaseUser.email ?: ""
-                    )
+                    try {
+                        val (storedUser, role) = getUserData(firebaseUser)
+                        if (role == UserRole.UNKNOWN) {
+                            auth.signOut()
+                            appViewModel.clearState()
+                            appViewModel.showSnackbar("User role not found. Contact an administrator to finish account setup.")
+                            return@launch
+                        }
 
-                    appViewModel.updateUser(user, role)
-                    if (role == UserRole.UNKNOWN) {
-                        appViewModel.showSnackbar("User role not found")
+                        val user = storedUser ?: User(
+                            id = firebaseUser.uid,
+                            name = firebaseUser.displayName ?: "User",
+                            email = firebaseUser.email ?: ""
+                        )
+
+                        appViewModel.updateUser(user, role)
+                    } catch (e: Exception) {
+                        appViewModel.clearState()
+                        appViewModel.showSnackbar(e.message ?: "Unable to load user profile.")
                     }
                 }
             } else {
                 appViewModel.clearState()
             }
         }
+    }
+
+    private fun DocumentSnapshot.toUserAndRole(fallbackUserId: String, fallbackEmail: String): Pair<User?, UserRole> {
+        if (!exists()) {
+            return Pair(null, UserRole.UNKNOWN)
+        }
+
+        val roleString = getString("role")
+        val role = when (roleString?.uppercase()) {
+            "MECHANIC" -> UserRole.MECHANIC
+            "MANAGER" -> UserRole.MANAGER
+            else -> {
+                UserRole.UNKNOWN
+            }
+        }
+
+        val user = User(
+            id = fallbackUserId,
+            name = getString("name") ?: "User",
+            email = getString("email") ?: fallbackEmail
+        )
+
+        return Pair(user, role)
     }
 }
