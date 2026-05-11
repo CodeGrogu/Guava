@@ -17,9 +17,6 @@ import com.codegrogu.guava.viewmodel.AppViewModel
 import com.codegrogu.guava.viewmodel.UiEvent
 import com.codegrogu.guava.ui.components.AppSnackbarVisuals
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
-
-
 
 @Composable
 fun AppNavigation(
@@ -35,7 +32,12 @@ fun AppNavigation(
         appViewModel.uiEvents.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event)
+                    snackbarHostState.showSnackbar(
+                        AppSnackbarVisuals(
+                            message = event.message,
+                            isError = event.isError
+                        )
+                    )
                 }
             }
         }
@@ -76,7 +78,9 @@ fun AppNavigation(
                     },
                     isLoading = uiState.isLoading,
                     onNavigateToSignUp = {
-                        navController.navigate(Destination.SignUp)
+                        navController.navigate(Destination.SignUp) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -86,19 +90,23 @@ fun AppNavigation(
                     onSignUp = { email, password, name, role ->
                         scope.launch {
                             appViewModel.setLoading(true)
-                            val result = authService.registerUser(email, password, name, role)
-                            if (result.isFailure) {
-                                appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Registration Failed")
-                            } else {
-                                appViewModel.showSnackbar("Account created successfully!", isError = false)
+                            try {
+                                val result = authService.registerUser(email, password, name, role)
+                                if (result.isFailure) {
+                                    appViewModel.showSnackbar(result.exceptionOrNull()?.message ?: "Registration Failed")
+                                } else {
+                                    appViewModel.showSnackbar("Account created successfully!", isError = false)
+                                }
+                            } finally {
+                                appViewModel.setLoading(false)
                             }
-                            appViewModel.setLoading(false)
                         }
                     },
                     isLoading = uiState.isLoading,
                     onNavigateToLogin = {
                         navController.navigate(Destination.Login) {
-                            popUpTo(Destination.Login) { inclusive = true }
+                            popUpTo(Destination.Login) { inclusive = false }
+                            launchSingleTop = true
                         }
                     }
                 )
@@ -108,7 +116,11 @@ fun AppNavigation(
                 // Example of a Dashboard that can navigate to Check-In
                 MechanicDashboardScreen(
                     userName = uiState.currentUser?.name ?: "Mechanic",
-                    onNavigateToCheckIn = { navController.navigate(Destination.CheckIn) }
+                    onNavigateToCheckIn = {
+                        navController.navigate(Destination.CheckIn) {
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
 
@@ -120,6 +132,7 @@ fun AppNavigation(
                         // Return to Dashboard and clear the Check-In screen from backstack
                         navController.navigate(Destination.MechanicDashboard) {
                             popUpTo(Destination.CheckIn) { inclusive = true }
+                            launchSingleTop = true
                         }
                     },
                     onNavigateBack = { navController.popBackStack() }
@@ -133,17 +146,19 @@ fun AppNavigation(
     }
 
     // Role-based navigation reaction
-    LaunchedEffect(uiState.currentUser, uiState.userRole) {
+    LaunchedEffect(uiState.currentUser?.id, uiState.userRole) {
         if (uiState.currentUser != null) {
             when (uiState.userRole) {
                 UserRole.MECHANIC -> {
                     navController.navigate(Destination.MechanicDashboard) {
                         popUpTo(Destination.Login) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
                 UserRole.MANAGER -> {
                     navController.navigate(Destination.ManagerDashboard) {
                         popUpTo(Destination.Login) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
                 else -> {}
