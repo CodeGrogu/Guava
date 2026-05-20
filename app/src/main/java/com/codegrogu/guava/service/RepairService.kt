@@ -195,7 +195,7 @@ object RepairService {
                     "completedByUid" to mechanicUid,
                     "completedByName" to mechanicName,
                     // Server timestamp ensures accuracy even if device clock is wrong
-                    "completedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                    "completedAt" to FieldValue.serverTimestamp()
                 )
             } else {
                 // Mark as incomplete (undo) by clearing completion info
@@ -269,7 +269,7 @@ object RepairService {
                 .document(vehicleId)
                 .collection("tasks")
                 .document(taskId)
-                .update("notes", com.google.firebase.firestore.FieldValue.arrayUnion(newNote))
+                .update("notes", FieldValue.arrayUnion(newNote))
                 .await()
 
             // Success! Return an empty Result to indicate the note was added
