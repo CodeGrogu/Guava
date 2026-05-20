@@ -291,9 +291,6 @@ fun CameraCapture(
                         factory = { ctx ->
                             val previewView = PreviewView(ctx)
 
-                            val cameraProviderFuture =
-                                ProcessCameraProvider.getInstance(ctx)
-
                             cameraProviderFuture.addListener({
                                 val cameraProvider = cameraProviderFuture.get()
 
@@ -303,6 +300,9 @@ fun CameraCapture(
 
                                 val capture = ImageCapture.Builder()
                                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                                    .setTargetRotation(
+                                        previewView.display?.rotation ?: Surface.ROTATION_0
+                                    )
                                     .build()
 
                                 imageCaptureUseCase = capture
