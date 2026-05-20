@@ -3,9 +3,12 @@ package com.codegrogu.guava.service
 import com.codegrogu.guava.firebase.FirebaseConfig
 import com.codegrogu.guava.model.MechanicNote
 import com.codegrogu.guava.model.RepairTask
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 object RepairService {
 
@@ -22,12 +25,14 @@ object RepairService {
         val isCompleted = docData["isCompleted"] as? Boolean ?: false
         val completedByUid = docData["completedByUid"] as? String ?: ""
         val completedByName = docData["completedByName"] as? String ?: ""
-        val completedAt = docData["completedAt"] as? Long
+        val completedAt = toMillis(docData["completedAt"])
 
         // Extract the notes array and convert each one to a MechanicNote object
         // Notes are stored as a List of Maps in Firestore
         val notesList = mutableListOf<MechanicNote>()
-        val notesArray = docData["notes"] as? List<Map<String, Any?>> ?: emptyList()
+        val notesArray = (docData["notes"] as? List<*>)
+            ?.mapNotNull { it as? Map<*, *> }
+            ?: emptyList()
 
         for (noteMap in notesArray) {
             // Build each mechanic note from the Firestore data
@@ -35,7 +40,8 @@ object RepairService {
                 text = noteMap["text"] as? String ?: "",
                 mechanicUid = noteMap["mechanicUid"] as? String ?: "",
                 mechanicName = noteMap["mechanicName"] as? String ?: "",
-                timestamp = noteMap["timestamp"] as? Long ?: 0L
+                timestamp = toMillis(noteMap["timestamp"]) ?: 0L,
+                imageUrl = noteMap["imageUrl"] as? String ?: ""
             )
             notesList.add(note)
         }
@@ -235,6 +241,15 @@ object RepairService {
             // Something went wrong (network error, permissions, task not found, etc.)
             // Return the error so the caller can handle it (show snackbar, etc)
             Result.failure(e)
+        }
+    }
+
+    private fun toMillis(value: Any?): Long? {
+        return when (value) {
+            is Long -> value
+            is Number -> value.toLong()
+            is Timestamp -> value.toDate().time
+            else -> null
         }
     }
 }
