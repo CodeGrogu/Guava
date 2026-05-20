@@ -126,6 +126,43 @@ object RepairService {
         }
     }
 
+    suspend fun addRepairTask(
+        vehicleId: String,
+        description: String,
+        mechanicUid: String,
+        mechanicName: String
+    ): Result<Unit> {
+        return try {
+            val cleanedDescription = description.trim()
+            if (cleanedDescription.isBlank()) {
+                return Result.failure(IllegalArgumentException("Task description is required."))
+            }
+
+            FirebaseConfig.firestore
+                .collection("vehicles")
+                .document(vehicleId)
+                .collection("tasks")
+                .add(
+                    mapOf(
+                        "description" to cleanedDescription,
+                        "isCompleted" to false,
+                        "completedByUid" to "",
+                        "completedByName" to "",
+                        "completedAt" to null,
+                        "notes" to emptyList<Map<String, Any>>(),
+                        "createdByUid" to mechanicUid,
+                        "createdByName" to mechanicName,
+                        "createdAt" to FieldValue.serverTimestamp()
+                    )
+                )
+                .await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────────
     // FR-3.2 / NFR-1 (Accountability):
     // Toggle a repair task's completion status (mark done or undo).
