@@ -81,25 +81,19 @@ object VehicleService {
                 "status" to "checked_in"
             )
 
-            // Create vehicle document
             val vehicleRef = FirebaseConfig
                 .firestore
                 .collection("vehicles")
-                .add(vehicleData)
-                .await()
+                .document()
 
-            // Create placeholder tasks document
-            FirebaseConfig
-                .firestore
-                .collection("vehicles")
-                .document(vehicleRef.id)
+            val initTaskRef = vehicleRef
                 .collection("tasks")
                 .document("_init")
-                .set(
-                    mapOf(
-                        "initialized" to true
-                    )
-                )
+
+            val batch = FirebaseConfig.firestore.batch()
+            batch.set(vehicleRef, vehicleData)
+            batch.set(initTaskRef, mapOf("initialized" to true))
+            batch.commit()
                 .await()
 
             Result.success(vehicleRef.id)
