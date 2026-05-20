@@ -375,13 +375,32 @@ fun RepairWorkflowScreen(
                                 },
 
                                 // When the mechanic saves a new note
-                                onNoteAdded = { noteText ->
+                                onNoteAdded = { noteText, imageUri ->
                                     // Call the service to add the note to Firestore in a background coroutine
                                     coroutineScope.launch {
+                                        val noteImageUrl = if (imageUri != null) {
+                                            val uploadResult = VehicleService.uploadConditionImage(imageUri)
+
+                                            if (uploadResult.isFailure) {
+                                                snackbarHostState.showSnackbar(
+                                                    message = "Error uploading note photo: ${
+                                                        uploadResult.exceptionOrNull()?.message ?: "Unknown error"
+                                                    }",
+                                                    duration = SnackbarDuration.Long
+                                                )
+                                                return@launch
+                                            }
+
+                                            uploadResult.getOrThrow()
+                                        } else {
+                                            null
+                                        }
+
                                         val result = RepairService.addNoteToTask(
                                             vehicleId = vehicleId,
                                             taskId = task.id,
                                             noteText = noteText,
+                                            noteImageUrl = noteImageUrl,
                                             mechanicUid = currentUser.id,
                                             mechanicName = currentUser.name
                                         )
