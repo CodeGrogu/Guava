@@ -3,11 +3,14 @@ package com.codegrogu.guava.ui.screens
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.*
@@ -26,10 +29,13 @@ import com.codegrogu.guava.service.VehicleService
 import com.codegrogu.guava.ui.components.CameraCapture
 import com.codegrogu.guava.ui.components.GarageBackground
 import com.codegrogu.guava.ui.components.GarageButton
+import com.codegrogu.guava.ui.components.GarageImagePreview
 import com.codegrogu.guava.ui.components.GarageTextField
 import com.codegrogu.guava.ui.theme.SafetyOrange
 import com.codegrogu.guava.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
+
+private const val MAX_CHECK_IN_PHOTOS = 3
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +54,8 @@ fun CheckInScreen(
     // Form state
     var licensePlate by remember { mutableStateOf("") }
     var initialKm by remember { mutableStateOf("") }
-    var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val capturedImageUris = remember { mutableStateListOf<Uri>() }
+    var cameraSessionKey by remember { mutableIntStateOf(0) }
 
     // UI state
     var isSubmitting by remember { mutableStateOf(false) }
@@ -145,14 +152,65 @@ fun CheckInScreen(
                 )
 
                 // Camera
-                CameraCapture(
-                    onImageCaptured = { uri ->
-                        capturedImageUri = uri
-                    },
-                    onImageCleared = {
-                        capturedImageUri = null
+                key(cameraSessionKey) {
+                    CameraCapture(
+                        onImageCaptured = { uri ->
+                            if (capturedImageUris.size < MAX_CHECK_IN_PHOTOS) {
+                                capturedImageUris.add(uri)
+                            } else {
+                                errorMessage = "Maximum $MAX_CHECK_IN_PHOTOS condition photos allowed."
+                            }
+                            cameraSessionKey += 1
+                        },
+                        onImageCleared = {}
+                    )
+                }
+
+                if (capturedImageUris.isNotEmpty()) {
+                    Text(
+                        text = "${capturedImageUris.size} CONDITION PHOTO${if (capturedImageUris.size == 1) "" else "S"} CAPTURED",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
+                    )
+
+                    Text(
+                        text = "Maximum $MAX_CHECK_IN_PHOTOS photos while Firebase Storage is unavailable.",
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(capturedImageUris, key = { it.toString() }) { uri ->
+                            Box(
+                                modifier = Modifier
+                                    .size(88.dp)
+                            ) {
+                                GarageImagePreview(
+                                    imageUrl = uri.toString(),
+                                    contentDescription = "Captured condition photo",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+
+                                IconButton(
+                                    onClick = { capturedImageUris.remove(uri) },
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Remove photo",
+                                        tint = SafetyOrange
+                                    )
+                                }
+                            }
+                        }
                     }
-                )
+                }
 
                 // Error banner
                 errorMessage?.let { message ->
@@ -199,8 +257,8 @@ fun CheckInScreen(
                                 return@GarageButton
                             }
 
-                            capturedImageUri == null -> {
-                                errorMessage = "A condition photo is required."
+                            capturedImageUris.isEmpty() -> {
+                                errorMessage = "At least one condition photo is required."
                                 return@GarageButton
                             }
 
@@ -215,31 +273,31 @@ fun CheckInScreen(
 
                         scope.launch {
 
-                            // Upload image
-                            val uploadResult =
-                                VehicleService.uploadConditionImage(
-                                    capturedImageUri!!
-                                )
+                            val imageUrls = mutableListOf<String>()
 
-                            if (uploadResult.isFailure) {
+                            for (imageUri in capturedImageUris) {
+                                val uploadResult = VehicleService.uploadConditionImage(imageUri)
 
-                                errorMessage =
-                                    "Image upload failed: ${
-                                        uploadResult.exceptionOrNull()?.message
-                                            ?: "Unknown error"
-                                    }"
+                                if (uploadResult.isFailure) {
+                                    errorMessage =
+                                        "Image upload failed: ${
+                                            uploadResult.exceptionOrNull()?.message
+                                                ?: "Unknown error"
+                                        }"
 
-                                isSubmitting = false
-                                return@launch
+                                    isSubmitting = false
+                                    return@launch
+                                }
+
+                                imageUrls.add(uploadResult.getOrThrow())
                             }
-
-                            val imageUrl = uploadResult.getOrThrow()
 
                             // Create vehicle object
                             val vehicle = Vehicle(
                                 licensePlate = licensePlate.trim(),
                                 initialKm = initialKm.toInt(),
-                                conditionImageUrl = imageUrl
+                                conditionImageUrl = imageUrls.first(),
+                                conditionImageUrls = imageUrls
                             )
 
                             // Save check-in
