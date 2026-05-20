@@ -17,4 +17,10 @@ sealed interface Destination {
 
     @Serializable
     data object CheckIn : Destination // Added this to fix the AppNavigation error
+
+    @Serializable
+    data class RepairWorkflow(
+        val vehicleId: String,
+        val licensePlate: String
+    ) : Destination
 }

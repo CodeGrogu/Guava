@@ -131,6 +131,19 @@ fun AppNavigation(
                         navController.navigate(Destination.CheckIn) {
                             launchSingleTop = true
                         }
+                    },
+                    onOpenVehicle = { vehicle ->
+                        navController.navigate(
+                            Destination.RepairWorkflow(
+                                vehicleId = vehicle.vehicleId,
+                                licensePlate = vehicle.licensePlate
+                            )
+                        ) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onLogout = {
+                        logoutToLogin(Destination.MechanicDashboard)
                     }
                 )
             }
@@ -150,8 +163,29 @@ fun AppNavigation(
                 )
             }
 
+            composable<Destination.RepairWorkflow> { backStackEntry ->
+                val destination = backStackEntry.toRoute<Destination.RepairWorkflow>()
+                val currentUser = uiState.currentUser
+
+                if (currentUser == null) {
+                    Text("Session expired. Please log in again.")
+                } else {
+                    RepairWorkflowScreen(
+                        vehicleId = destination.vehicleId,
+                        vehicleLabel = destination.licensePlate,
+                        currentUser = currentUser,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+            }
+
             composable<Destination.ManagerDashboard> {
-                Text("Manager Dashboard - Welcome ${uiState.currentUser?.name}")
+                ManagerDashboardScreen(
+                    userName = uiState.currentUser?.name ?: "Manager",
+                    onLogout = {
+                        logoutToLogin(Destination.ManagerDashboard)
+                    }
+                )
             }
         }
     }
