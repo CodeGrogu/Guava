@@ -90,3 +90,68 @@ All UI matches the garage industrial theme from `LoginScreen.kt`:
 - `FontFamily.Monospace` for all text
 - `SafetyOrange` for all icons, borders, and accents
 - ALL CAPS labels with letter spacing
+
+---
+
+## Phase 3 — Collaborative Repairs Module
+**Author**: Enoch (Member 3)
+**Branch**: feature/collaborative-repairs (suggested)
+**Date**: 2026-05-20
+**Status**: In Progress
+
+---
+
+### Commit 1: RepairTask Model
+
+**Files Created**
+| File | Action | Location |
+|------|--------|----------|
+| `RepairTask.kt` | Created | `model/` |
+
+**What It Does**
+
+This commit introduces two data classes that represent repair tasks in the system:
+
+1. **`MechanicNote`** — A single note written by a mechanic about a repair task
+   - `text` — the actual message/observation written by the mechanic
+   - `mechanicUid` — who wrote it (for database tracking)
+   - `mechanicName` — who wrote it (for UI display to team members)
+   - `timestamp` — when they wrote it (maintains chronological order)
+
+2. **`RepairTask`** — A single repair job that needs to be completed on a vehicle
+   - `id` — unique identifier (created by Firestore)
+   - `description` — what needs to be fixed (e.g., "Replace clutch", "Fix brakes")
+   - `isCompleted` — whether the job is done (true/false)
+   - `completedByUid` — which mechanic finished it (empty if not done)
+   - `completedByName` — mechanic's name for display (empty if not done)
+   - `completedAt` — exact timestamp when it was completed (null if not done)
+   - `notes` — list of all mechanic notes about this task (audit trail)
+
+**Why This Matters**
+
+These models allow mechanics to:
+- See what work needs doing on a vehicle
+- Mark tasks complete with their name attached (accountability — NFR-1)
+- Leave notes for other team members
+- See the history of who did what and when
+
+**Firestore Structure This Creates**
+
+The models expect tasks to live here in Firestore:
+```
+/vehicles/{vehicleId}
+    /tasks/{taskId}
+        description:      String
+        isCompleted:      Boolean
+        completedByUid:   String
+        completedByName:  String
+        completedAt:      Number (timestamp)
+        notes:            [
+            {text, mechanicUid, mechanicName, timestamp},
+            ...
+        ]
+```
+
+**Next Steps**
+
+Next commit will create `RepairService.kt` to read and write these tasks to Firestore in real-time.
