@@ -148,6 +148,9 @@ fun CheckInScreen(
                 CameraCapture(
                     onImageCaptured = { uri ->
                         capturedImageUri = uri
+                    },
+                    onImageCleared = {
+                        capturedImageUri = null
                     }
                 )
 
