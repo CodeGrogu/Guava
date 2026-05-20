@@ -208,3 +208,76 @@ A Flow is like a fire hose of data:
 
 Next commit will add write functions to `RepairService` (toggle task completion and add notes).
 
+---
+
+### Commit 3: RepairService — Write Functions (Mutations)
+
+**Files Modified**
+| File | Action | Location |
+|------|--------|----------|
+| `RepairService.kt` | Modified | `service/` — added 2 write functions |
+
+**What It Does**
+
+This commit extends `RepairService` with two suspend functions that allow mechanics to UPDATE tasks in Firestore:
+
+1. **`toggleTaskCompletion(vehicleId, taskId, isComplete, mechanicUid, mechanicName): Result<Unit>`**
+   - Mark a repair task as complete OR undo completion (isComplete true/false)
+   - When marking complete:
+     - Sets the task's `isCompleted` flag to true
+     - Records which mechanic did it (`completedByUid` and `completedByName`)
+     - Saves exact server timestamp (`completedAt`)
+   - When undoing (marking incomplete):
+     - Sets `isCompleted` to false
+     - Clears the mechanic attribution fields
+     - Clears the timestamp
+   - Returns `Result<Unit>` for error handling (success or failure with exception)
+   - Enforces accountability (NFR-1): You can't complete a task anonymously
+
+2. **`addNoteToTask(vehicleId, taskId, noteText, mechanicUid, mechanicName): Result<Unit>`**
+   - Adds a single mechanic note to a task's notes array
+   - Each note includes:
+     - The text the mechanic wrote
+     - Who wrote it (`mechanicUid` and `mechanicName`)
+     - When it was written (server timestamp)
+   - Uses Firestore's `arrayUnion()` helper to safely APPEND to the notes array without overwriting
+   - Multiple mechanics can add notes to the same task in any order — Firestore handles conflicts automatically
+   - Returns `Result<Unit>` for error handling
+   - Enforces accountability (NFR-1): Every note is tagged with who wrote it
+
+**Key Concepts Explained**
+
+- **Result<T>**: A wrapper that holds either Success(data) or Failure(error). Lets us handle success/failure in one function.
+- **arrayUnion()**: A Firestore helper that appends to an array safely, even if multiple clients are writing at the same time.
+- **Server timestamp**: The exact time the Firestore server receives the update (not the device clock — much more reliable).
+- **Accountability Trail**: Every change is tagged with mechanic UID/name, so managers can see who did what and when.
+
+**Firestore Operations This Creates**
+
+```kotlin
+// Update a task's completion status
+/vehicles/{vehicleId}/tasks/{taskId}
+    isCompleted: Boolean
+    completedByUid: String
+    completedByName: String
+    completedAt: Timestamp (server time)
+
+// Append a note to a task's notes array
+/vehicles/{vehicleId}/tasks/{taskId}
+    notes: [
+        ...existing notes...,
+        {text, mechanicUid, mechanicName, timestamp}  <-- NEW
+    ]
+```
+
+**Error Handling**
+
+Both functions wrap their Firestore calls in try-catch:
+- If the update succeeds, return `Result.success(Unit)`
+- If anything fails (network down, permissions denied, task doesn't exist), catch the exception and return `Result.failure(e)`
+- The UI screens can check the result and show error snackbars if needed
+
+**Next Steps**
+
+Next commit will create the `TaskListItem` composable (basic UI for displaying a single task).
+

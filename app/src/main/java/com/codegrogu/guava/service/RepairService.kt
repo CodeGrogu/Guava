@@ -119,5 +119,122 @@ object RepairService {
             }
         }
     }
-}
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // FR-3.2 / NFR-1 (Accountability):
+    // Toggle a repair task's completion status (mark done or undo).
+    // Includes mechanic attribution so we know WHO completed it and WHEN.
+    //
+    // Parameters:
+    //   vehicleId:      The vehicle the task belongs to
+    //   taskId:         The specific task to toggle
+    //   isComplete:     true to mark done, false to undo completion
+    //   mechanicUid:    The Firebase Auth UID of the mechanic making this change
+    //   mechanicName:   The display name of the mechanic (for UI readability)
+    //
+    // Returns Result<Unit>: Success if the update worked, Failure with error if not
+    // ─────────────────────────────────────────────────────────────────────────────
+    suspend fun toggleTaskCompletion(
+        vehicleId: String,
+        taskId: String,
+        isComplete: Boolean,
+        mechanicUid: String,
+        mechanicName: String
+    ): Result<Unit> {
+        return try {
+            // Prepare the data to send to Firestore
+            // If marking complete: set who did it and when
+            // If marking incomplete: clear who did it (undo)
+            val updateData = if (isComplete) {
+                // Mark as complete with mechanic details
+                mapOf(
+                    "isCompleted" to true,
+                    "completedByUid" to mechanicUid,
+                    "completedByName" to mechanicName,
+                    // Server timestamp ensures accuracy even if device clock is wrong
+                    "completedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+            } else {
+                // Mark as incomplete (undo) by clearing completion info
+                mapOf(
+                    "isCompleted" to false,
+                    "completedByUid" to "",
+                    "completedByName" to "",
+                    "completedAt" to null
+                )
+            }
+
+            // Get a reference to the specific task document and update it
+            FirebaseConfig.firestore
+                .collection("vehicles")
+                .document(vehicleId)
+                .collection("tasks")
+                .document(taskId)
+                .update(updateData)
+                .await()
+
+            // Success! Return an empty Result to indicate the operation worked
+            Result.success(Unit)
+        } catch (e: Exception) {
+            // Something went wrong (network error, permissions, task not found, etc.)
+            // Return the error so the caller can handle it (show snackbar, etc)
+            Result.failure(e)
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // FR-3.3 / NFR-1 (Accountability):
+    // Add a mechanic's note to a repair task.
+    // Each note is tagged with who wrote it, creating an audit trail.
+    //
+    // How it works:
+    // The "notes" field in Firestore is an ARRAY. Each note is a Map containing:
+    //   {text, mechanicUid, mechanicName, timestamp}
+    // When a mechanic adds a note, we APPEND it to this array.
+    //
+    // Parameters:
+    //   vehicleId:      The vehicle the task belongs to
+    //   taskId:         The specific task to add a note to
+    //   noteText:       The actual note text the mechanic wrote
+    //   mechanicUid:    The Firebase Auth UID of the mechanic writing the note
+    //   mechanicName:   The display name of the mechanic (for UI readability)
+    //
+    // Returns Result<Unit>: Success if the note was added, Failure with error if not
+    // ────────────────────────────────────��────────────────────────────────────────
+    suspend fun addNoteToTask(
+        vehicleId: String,
+        taskId: String,
+        noteText: String,
+        mechanicUid: String,
+        mechanicName: String
+    ): Result<Unit> {
+        return try {
+            // Create the note object as a Map (this is what gets stored in Firestore)
+            val newNote = mapOf(
+                "text" to noteText,
+                "mechanicUid" to mechanicUid,
+                "mechanicName" to mechanicName,
+                // Exact timestamp when the note is created on the server (accurate)
+                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+
+            // Get a reference to the task document
+            // Use arrayUnion() to APPEND the note to the existing notes array
+            // (This is a Firestore helper that safely adds without overwriting)
+            FirebaseConfig.firestore
+                .collection("vehicles")
+                .document(vehicleId)
+                .collection("tasks")
+                .document(taskId)
+                .update("notes", com.google.firebase.firestore.FieldValue.arrayUnion(newNote))
+                .await()
+
+            // Success! Return an empty Result to indicate the note was added
+            Result.success(Unit)
+        } catch (e: Exception) {
+            // Something went wrong (network error, permissions, task not found, etc.)
+            // Return the error so the caller can handle it (show snackbar, etc)
+            Result.failure(e)
+        }
+    }
+}
