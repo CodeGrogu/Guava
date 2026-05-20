@@ -7,6 +7,7 @@ data class Vehicle(
     val licensePlate: String = "",
     val initialKm: Int = 0,
     val conditionImageUrl: String = "",
+    val conditionImageUrls: List<String> = emptyList(),
     val checkedInByUid: String = "",
     val checkedInByName: String = "",
     val checkInTimestamp: Timestamp? = null
