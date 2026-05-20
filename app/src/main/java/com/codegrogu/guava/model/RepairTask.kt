@@ -13,7 +13,9 @@ data class MechanicNote(
     val mechanicName: String,
 
     // The exact timestamp when this note was created (helps track order of updates)
-    val timestamp: Long
+    val timestamp: Long,
+
+    val imageUrl: String = ""
 )
 
 // RepairTask represents a single repair job that needs to be done on a vehicle.
