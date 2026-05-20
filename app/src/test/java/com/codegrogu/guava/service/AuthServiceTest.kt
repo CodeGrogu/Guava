@@ -10,6 +10,8 @@ import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -60,6 +62,8 @@ class AuthServiceTest {
         whenever(mockTask.isComplete).thenReturn(true)
         whenever(mockTask.isSuccessful).thenReturn(true)
         whenever(mockTask.result).thenReturn(mockSnapshot)
+        whenever(mockSnapshot.exists()).thenReturn(true)
+        whenever(mockSnapshot.id).thenReturn(userId)
         whenever(mockSnapshot.getString("name")).thenReturn("Test Name")
         whenever(mockSnapshot.getString("email")).thenReturn("test@test.com")
         whenever(mockSnapshot.getString("role")).thenReturn("MECHANIC")
@@ -100,11 +104,71 @@ class AuthServiceTest {
         whenever(mockDocTask.isComplete).thenReturn(true)
         whenever(mockDocTask.isSuccessful).thenReturn(true)
         whenever(mockDocTask.result).thenReturn(mockSnapshot)
+        whenever(mockSnapshot.exists()).thenReturn(true)
+        whenever(mockSnapshot.id).thenReturn(userId)
         whenever(mockSnapshot.getString("name")).thenReturn("Manager User")
+        whenever(mockSnapshot.getString("email")).thenReturn(email)
         whenever(mockSnapshot.getString("role")).thenReturn("MANAGER")
 
         val result = authService.loginUser(email, password)
         
+        assertTrue(result.isSuccess)
+        verify(appViewModel).updateUser(any(), eq(UserRole.MANAGER))
+    }
+
+    @Test
+    fun `loginUser falls back to email lookup when uid document is missing`() = runTest {
+        val email = "manager@valentine.com"
+        val password = "password"
+        val userId = "authUid123"
+        val firestoreDocumentId = "legacyDocId"
+
+        val mockAuthTask = mock(Task::class.java) as Task<AuthResult>
+        val mockAuthResult = mock(AuthResult::class.java)
+        val mockFirebaseUser = mock(FirebaseUser::class.java)
+
+        whenever(auth.signInWithEmailAndPassword(email, password)).thenReturn(mockAuthTask)
+        whenever(mockAuthTask.isComplete).thenReturn(true)
+        whenever(mockAuthTask.isSuccessful).thenReturn(true)
+        whenever(mockAuthTask.result).thenReturn(mockAuthResult)
+        whenever(mockAuthResult.user).thenReturn(mockFirebaseUser)
+        whenever(mockFirebaseUser.uid).thenReturn(userId)
+        whenever(mockFirebaseUser.email).thenReturn(email)
+
+        val mockCollection = mock(CollectionReference::class.java)
+        val mockUidDocument = mock(DocumentReference::class.java)
+        val mockUidTask = mock(Task::class.java) as Task<DocumentSnapshot>
+        val mockMissingSnapshot = mock(DocumentSnapshot::class.java)
+        val mockEmailQuery = mock(Query::class.java)
+        val mockLimitedQuery = mock(Query::class.java)
+        val mockQueryTask = mock(Task::class.java) as Task<QuerySnapshot>
+        val mockQuerySnapshot = mock(QuerySnapshot::class.java)
+        val mockEmailSnapshot = mock(DocumentSnapshot::class.java)
+
+        whenever(firestore.collection("users")).thenReturn(mockCollection)
+        whenever(mockCollection.document(userId)).thenReturn(mockUidDocument)
+        whenever(mockUidDocument.get()).thenReturn(mockUidTask)
+        whenever(mockUidTask.isComplete).thenReturn(true)
+        whenever(mockUidTask.isSuccessful).thenReturn(true)
+        whenever(mockUidTask.result).thenReturn(mockMissingSnapshot)
+        whenever(mockMissingSnapshot.exists()).thenReturn(false)
+        whenever(mockMissingSnapshot.id).thenReturn(userId)
+
+        whenever(mockCollection.whereEqualTo("email", email)).thenReturn(mockEmailQuery)
+        whenever(mockEmailQuery.limit(1)).thenReturn(mockLimitedQuery)
+        whenever(mockLimitedQuery.get()).thenReturn(mockQueryTask)
+        whenever(mockQueryTask.isComplete).thenReturn(true)
+        whenever(mockQueryTask.isSuccessful).thenReturn(true)
+        whenever(mockQueryTask.result).thenReturn(mockQuerySnapshot)
+        whenever(mockQuerySnapshot.documents).thenReturn(listOf(mockEmailSnapshot))
+        whenever(mockEmailSnapshot.exists()).thenReturn(true)
+        whenever(mockEmailSnapshot.id).thenReturn(firestoreDocumentId)
+        whenever(mockEmailSnapshot.getString("name")).thenReturn("Test Manager")
+        whenever(mockEmailSnapshot.getString("email")).thenReturn(email)
+        whenever(mockEmailSnapshot.getString("role")).thenReturn("MANAGER")
+
+        val result = authService.loginUser(email, password)
+
         assertTrue(result.isSuccess)
         verify(appViewModel).updateUser(any(), eq(UserRole.MANAGER))
     }

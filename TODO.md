@@ -81,11 +81,11 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: Android Manifest permissions, necessary dependencies
 - **Where it will be called**: `CheckInScreen` Composable
 - **Tasks**:
-    - [ ] Add camera and image compression libraries to `build.gradle.kts` (e.g., `androidx.camera:camera-camera2`, image compression library).
-    - [ ] **Update `AndroidManifest.xml` with `<uses-permission android:name="android.permission.CAMERA" />` and storage permissions.**
-    - [ ] Implement runtime permission requests for camera and storage permissions.
-    - [ ] Build Jetpack Compose camera preview UI (Viewfinder, Capture button, Retake button).
-    - [ ] Implement logic to compress raw high-resolution images before saving to device cache (conserves Firebase free-tier bandwidth).
+    - [x] Add camera and image compression libraries to `build.gradle.kts` (e.g., `androidx.camera:camera-camera2`, image compression library).
+    - [x] **Update `AndroidManifest.xml` with `<uses-permission android:name="android.permission.CAMERA" />`.**
+    - [x] Implement runtime permission request for camera access.
+    - [x] Build Jetpack Compose camera preview UI (Viewfinder, Capture button, Retake button).
+    - [x] Implement logic to compress raw high-resolution images before saving to device cache (conserves Firebase free-tier bandwidth).
 
 ### 6. Vehicle Check-In Service
 - **File Name**: `VehicleService.kt`
@@ -94,10 +94,10 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `FirebaseConfig.kt`
 - **Where it will be called**: `CheckInScreen` Composable, `ReportService.kt`
 - **Tasks**:
-    - [ ] Create `uploadConditionImage(compressedImageUri: Uri)` suspend function to push local images to Firebase Storage and return the download URL.
-    - [ ] Create `createCheckInRecord(vehicleDetails: VehicleData, km: Int, imageUrl: String)` suspend function.
-    - [ ] Include server timestamp creation in `createCheckInRecord` to accurately log exact check-in time.
-    - [ ] Ensure the check-in record automatically initializes an empty "Repair Tasks" sub-collection.
+    - [x] Create `uploadConditionImage(compressedImageUri: Uri)` suspend function to push local images to Firebase Storage and return the download URL.
+    - [x] Create `createCheckInRecord(vehicleDetails: VehicleData, km: Int, imageUrl: String)` suspend function.
+    - [x] Include server timestamp creation in `createCheckInRecord` to accurately log exact check-in time.
+    - [x] Ensure the check-in record automatically initializes an empty "Repair Tasks" sub-collection.
 
 ### 7. Vehicle Check-In Screen UI
 - **File Name**: `CheckInScreen.kt`
@@ -106,11 +106,11 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `CameraCapture.kt`, `VehicleService.kt`
 - **Where it will be called**: Mechanic Navigation Graph
 - **Tasks**:
-    - [ ] Build Compose text fields for Truck License Plate/ID and Initial Kilometers.
-    - [ ] Integrate `CameraCapture` Composable into the form layout.
-    - [ ] Build a "Submit Check-In" button styled with Material Design 3.
-    - [ ] Implement form validation (prevent submission without km, ID, and at least one condition photo).
-    - [ ] Show a Toast message and navigate back to dashboard upon successful DB upload.
+    - [x] Build Compose text fields for Truck License Plate/ID and Initial Kilometers.
+    - [x] Integrate `CameraCapture` Composable into the form layout.
+    - [x] Build a "Submit Check-In" button styled with Material Design 3.
+    - [x] Implement form validation (prevent submission without km, ID, and at least one condition photo).
+    - [x] Show a Toast message and navigate back to dashboard upon successful DB upload.
 
 ---
 

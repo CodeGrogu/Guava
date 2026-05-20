@@ -2,6 +2,7 @@ package com.codegrogu.guava.ui.components
 
 import android.content.Context
 import android.net.Uri
+import android.view.Surface
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
@@ -23,13 +24,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.codegrogu.guava.ui.theme.SafetyOrange
 import id.zelory.compressor.Compressor
@@ -40,7 +41,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 // ─────────────────────────────────────────────────────────────
 // CameraCapture
@@ -57,11 +58,16 @@ import java.util.concurrent.Executor
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun CameraCapture(
-    onImageCaptured: (Uri) -> Unit
+    onImageCaptured: (Uri) -> Unit,
+    onImageCleared: () -> Unit = {}
 ) {
     val context       = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope         = rememberCoroutineScope()
+    val cameraExecutor = remember(context) { Executors.newSingleThreadExecutor() }
+    val cameraProviderFuture = remember(context) {
+        ProcessCameraProvider.getInstance(context)
+    }
 
     // State
     var hasCameraPermission by remember { mutableStateOf(false) }
@@ -81,6 +87,26 @@ fun CameraCapture(
     // Request permission on first composition
     LaunchedEffect(Unit) {
         permissionLauncher.launch(android.Manifest.permission.CAMERA)
+    }
+
+    DisposableEffect(cameraProviderFuture) {
+        onDispose {
+            runCatching {
+                if (cameraProviderFuture.isDone) {
+                    cameraProviderFuture.get().unbindAll()
+                }
+            }
+            cameraExecutor.shutdown()
+        }
+    }
+
+    LaunchedEffect(capturedImageUri) {
+        if (capturedImageUri != null && cameraProviderFuture.isDone) {
+            runCatching {
+                cameraProviderFuture.get().unbindAll()
+            }
+            imageCaptureUseCase = null
+        }
     }
 
     // ── UI ───────────────────────────────────────────────────
@@ -134,7 +160,7 @@ fun CameraCapture(
                             onClick = {
                                 permissionLauncher.launch(android.Manifest.permission.CAMERA)
                             },
-                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                            border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
                                 brush = androidx.compose.ui.graphics.SolidColor(SafetyOrange)
                             )
                         ) {
@@ -222,9 +248,12 @@ fun CameraCapture(
 
                 // Retake button
                 OutlinedButton(
-                    onClick = { capturedImageUri = null },
+                    onClick = {
+                        capturedImageUri = null
+                        onImageCleared()
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
                         brush = androidx.compose.ui.graphics.SolidColor(SafetyOrange)
                     )
                 ) {
@@ -262,9 +291,6 @@ fun CameraCapture(
                         factory = { ctx ->
                             val previewView = PreviewView(ctx)
 
-                            val cameraProviderFuture =
-                                ProcessCameraProvider.getInstance(ctx)
-
                             cameraProviderFuture.addListener({
                                 val cameraProvider = cameraProviderFuture.get()
 
@@ -274,6 +300,9 @@ fun CameraCapture(
 
                                 val capture = ImageCapture.Builder()
                                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                                    .setTargetRotation(
+                                        previewView.display?.rotation ?: Surface.ROTATION_0
+                                    )
                                     .build()
 
                                 imageCaptureUseCase = capture
@@ -306,7 +335,7 @@ fun CameraCapture(
 
                             capture.takePicture(
                                 outputOptions,
-                                ContextCompat.getMainExecutor(context),
+                                cameraExecutor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(
                                         output: ImageCapture.OutputFileResults

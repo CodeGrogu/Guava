@@ -56,7 +56,25 @@ class NavigationTest {
             role = UserRole.MECHANIC
         )
 
-        composeTestRule.onNodeWithText("Mechanic Dashboard - Welcome Mechanic Bob").assertIsDisplayed()
+        composeTestRule.onNodeWithText("MECHANIC DASHBOARD").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Welcome Mechanic Bob").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigation_navigatesToCheckInFromMechanicDashboard() {
+        composeTestRule.setContent {
+            AppNavigation(appViewModel = appViewModel, authService = authService)
+        }
+
+        appViewModel.updateUser(
+            user = User("1", "Mechanic Bob", "bob@test.com"),
+            role = UserRole.MECHANIC
+        )
+
+        composeTestRule.onNodeWithText("VEHICLE CHECK-IN").performClick()
+
+        composeTestRule.onNodeWithText("Log new truck arrival").assertIsDisplayed()
+        composeTestRule.onNodeWithText("TRUCK LICENSE PLATE / ID").assertIsDisplayed()
     }
 
     @Test

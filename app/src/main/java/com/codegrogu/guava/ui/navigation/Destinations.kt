@@ -14,4 +14,7 @@ sealed interface Destination {
 
     @Serializable
     data object ManagerDashboard : Destination
+
+    @Serializable
+    data object CheckIn : Destination // Added this to fix the AppNavigation error
 }
