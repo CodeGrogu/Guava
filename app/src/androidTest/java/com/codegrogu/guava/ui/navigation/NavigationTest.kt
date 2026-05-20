@@ -9,7 +9,9 @@ import com.codegrogu.guava.viewmodel.AppViewModel
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.verify
 
 class NavigationTest {
 
@@ -23,6 +25,10 @@ class NavigationTest {
     fun setup() {
         appViewModel = AppViewModel()
         authService = mock(AuthService::class.java)
+        doAnswer {
+            appViewModel.clearState()
+            null
+        }.`when`(authService).logoutUser()
     }
 
     @Test
@@ -56,7 +62,25 @@ class NavigationTest {
             role = UserRole.MECHANIC
         )
 
-        composeTestRule.onNodeWithText("Mechanic Dashboard - Welcome Mechanic Bob").assertIsDisplayed()
+        composeTestRule.onNodeWithText("MECHANIC DASHBOARD").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Welcome Mechanic Bob").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigation_navigatesToCheckInFromMechanicDashboard() {
+        composeTestRule.setContent {
+            AppNavigation(appViewModel = appViewModel, authService = authService)
+        }
+
+        appViewModel.updateUser(
+            user = User("1", "Mechanic Bob", "bob@test.com"),
+            role = UserRole.MECHANIC
+        )
+
+        composeTestRule.onNodeWithText("VEHICLE CHECK-IN").performClick()
+
+        composeTestRule.onNodeWithText("Log new truck arrival").assertIsDisplayed()
+        composeTestRule.onNodeWithText("TRUCK LICENSE PLATE / ID").assertIsDisplayed()
     }
 
     @Test
@@ -70,6 +94,41 @@ class NavigationTest {
             role = UserRole.MANAGER
         )
 
-        composeTestRule.onNodeWithText("Manager Dashboard - Welcome Manager Alice").assertIsDisplayed()
+        composeTestRule.onNodeWithText("MANAGER DASHBOARD").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Welcome Manager Alice").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigation_logsOutFromMechanicDashboard() {
+        composeTestRule.setContent {
+            AppNavigation(appViewModel = appViewModel, authService = authService)
+        }
+
+        appViewModel.updateUser(
+            user = User("1", "Mechanic Bob", "bob@test.com"),
+            role = UserRole.MECHANIC
+        )
+
+        composeTestRule.onNodeWithText("LOG OUT").performClick()
+
+        verify(authService).logoutUser()
+        composeTestRule.onNodeWithText("VALENTINE'S GARAGE").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigation_logsOutFromManagerDashboard() {
+        composeTestRule.setContent {
+            AppNavigation(appViewModel = appViewModel, authService = authService)
+        }
+
+        appViewModel.updateUser(
+            user = User("2", "Manager Alice", "alice@test.com"),
+            role = UserRole.MANAGER
+        )
+
+        composeTestRule.onNodeWithText("LOG OUT").performClick()
+
+        verify(authService).logoutUser()
+        composeTestRule.onNodeWithText("VALENTINE'S GARAGE").assertIsDisplayed()
     }
 }

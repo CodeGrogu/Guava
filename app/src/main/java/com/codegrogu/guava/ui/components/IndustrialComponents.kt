@@ -155,7 +155,8 @@ fun GarageTextField(
     fieldTag: String? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    leadingIcon: ImageVector? = null
+    leadingIcon: ImageVector? = null,
+    trailingIcon: (@Composable () -> Unit)? = null
 ) {
     Column(modifier = modifier) {
         Text(
@@ -187,6 +188,7 @@ fun GarageTextField(
             singleLine = true,
             shape = MaterialTheme.shapes.extraSmall, // More geometric
             leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
+            trailingIcon = trailingIcon,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),

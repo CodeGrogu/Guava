@@ -1,7 +1,14 @@
 package com.codegrogu.guava.ui.components
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.Settings
+import android.view.Surface
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
@@ -17,19 +24,23 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.codegrogu.guava.ui.theme.SafetyOrange
 import id.zelory.compressor.Compressor
@@ -40,7 +51,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 // ─────────────────────────────────────────────────────────────
 // CameraCapture
@@ -57,14 +68,24 @@ import java.util.concurrent.Executor
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun CameraCapture(
-    onImageCaptured: (Uri) -> Unit
+    onImageCaptured: (Uri) -> Unit,
+    onImageCleared: () -> Unit = {}
 ) {
     val context       = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val activity = context.findActivity()
     val scope         = rememberCoroutineScope()
+    val cameraExecutor = remember(context) { Executors.newSingleThreadExecutor() }
+    val cameraProviderFuture = remember(context) {
+        ProcessCameraProvider.getInstance(context)
+    }
 
     // State
-    var hasCameraPermission by remember { mutableStateOf(false) }
+    var hasCameraPermission by remember {
+        mutableStateOf(context.hasCameraPermission())
+    }
+    var permissionRequested by rememberSaveable { mutableStateOf(false) }
+    var shouldOpenSettings by remember { mutableStateOf(false) }
     var capturedImageUri    by remember { mutableStateOf<Uri?>(null) }
     var isCompressing       by remember { mutableStateOf(false) }
 
@@ -76,11 +97,63 @@ fun CameraCapture(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasCameraPermission = granted
+        shouldOpenSettings = !granted &&
+            permissionRequested &&
+            activity?.let {
+                !ActivityCompat.shouldShowRequestPermissionRationale(
+                    it,
+                    Manifest.permission.CAMERA
+                )
+            } == true
     }
 
-    // Request permission on first composition
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(android.Manifest.permission.CAMERA)
+    fun requestCameraPermission() {
+        permissionRequested = true
+        permissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+
+    // Request permission on first composition if Android can show the dialog.
+    LaunchedEffect(hasCameraPermission) {
+        if (!hasCameraPermission && !permissionRequested) {
+            requestCameraPermission()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasCameraPermission = context.hasCameraPermission()
+                if (hasCameraPermission) {
+                    shouldOpenSettings = false
+                }
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    DisposableEffect(cameraProviderFuture) {
+        onDispose {
+            runCatching {
+                if (cameraProviderFuture.isDone) {
+                    cameraProviderFuture.get().unbindAll()
+                }
+            }
+            cameraExecutor.shutdown()
+        }
+    }
+
+    LaunchedEffect(capturedImageUri) {
+        if (capturedImageUri != null && cameraProviderFuture.isDone) {
+            runCatching {
+                cameraProviderFuture.get().unbindAll()
+            }
+            imageCaptureUseCase = null
+        }
     }
 
     // ── UI ───────────────────────────────────────────────────
@@ -124,7 +197,11 @@ fun CameraCapture(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            "CAMERA PERMISSION REQUIRED",
+                            if (shouldOpenSettings) {
+                                "CAMERA ACCESS DISABLED"
+                            } else {
+                                "CAMERA PERMISSION REQUIRED"
+                            },
                             fontFamily = FontFamily.Monospace,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -132,14 +209,18 @@ fun CameraCapture(
                         Spacer(modifier = Modifier.height(12.dp))
                         OutlinedButton(
                             onClick = {
-                                permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                if (shouldOpenSettings) {
+                                    context.openAppSettings()
+                                } else {
+                                    requestCameraPermission()
+                                }
                             },
-                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                            border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
                                 brush = androidx.compose.ui.graphics.SolidColor(SafetyOrange)
                             )
                         ) {
                             Text(
-                                "GRANT ACCESS",
+                                if (shouldOpenSettings) "OPEN SETTINGS" else "GRANT ACCESS",
                                 fontFamily = FontFamily.Monospace,
                                 color = SafetyOrange,
                                 style = MaterialTheme.typography.labelSmall
@@ -222,9 +303,12 @@ fun CameraCapture(
 
                 // Retake button
                 OutlinedButton(
-                    onClick = { capturedImageUri = null },
+                    onClick = {
+                        capturedImageUri = null
+                        onImageCleared()
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
                         brush = androidx.compose.ui.graphics.SolidColor(SafetyOrange)
                     )
                 ) {
@@ -262,9 +346,6 @@ fun CameraCapture(
                         factory = { ctx ->
                             val previewView = PreviewView(ctx)
 
-                            val cameraProviderFuture =
-                                ProcessCameraProvider.getInstance(ctx)
-
                             cameraProviderFuture.addListener({
                                 val cameraProvider = cameraProviderFuture.get()
 
@@ -274,6 +355,9 @@ fun CameraCapture(
 
                                 val capture = ImageCapture.Builder()
                                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                                    .setTargetRotation(
+                                        previewView.display?.rotation ?: Surface.ROTATION_0
+                                    )
                                     .build()
 
                                 imageCaptureUseCase = capture
@@ -306,7 +390,7 @@ fun CameraCapture(
 
                             capture.takePicture(
                                 outputOptions,
-                                ContextCompat.getMainExecutor(context),
+                                cameraExecutor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(
                                         output: ImageCapture.OutputFileResults
@@ -364,4 +448,28 @@ private suspend fun compressImage(context: Context, file: File): File {
         quality(70)
         format(android.graphics.Bitmap.CompressFormat.JPEG)
     }
+}
+
+private fun Context.hasCameraPermission(): Boolean {
+    return ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.CAMERA
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
+private tailrec fun Context.findActivity(): Activity? {
+    return when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
+}
+
+private fun Context.openAppSettings() {
+    val intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", packageName, null)
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    startActivity(intent)
 }
