@@ -42,7 +42,8 @@ fun CheckInScreen(
     val scope   = rememberCoroutineScope()
 
     // Read current mechanic from global state
-    val currentUser by viewModel.currentUser.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val currentUser = uiState.currentUser
 
     // Form state
     var licensePlate    by remember { mutableStateOf("") }
@@ -209,8 +210,8 @@ fun CheckInScreen(
 
                             val checkInResult = VehicleService.createCheckInRecord(
                                 vehicle         = vehicle,
-                                currentUserUid  = currentUser!!.uid,
-                                currentUserName = currentUser!!.name
+                                currentUserUid  = currentUser.id,
+                                currentUserName = currentUser.name
                             )
 
                             isSubmitting = false

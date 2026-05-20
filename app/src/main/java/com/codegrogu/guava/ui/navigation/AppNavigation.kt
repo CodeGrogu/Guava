@@ -1,3 +1,23 @@
+package com.codegrogu.guava.ui.navigation
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.codegrogu.guava.model.UserRole
+import com.codegrogu.guava.service.AuthService
+import com.codegrogu.guava.ui.screens.CheckInScreen
+import com.codegrogu.guava.ui.screens.LoginScreen
+import com.codegrogu.guava.ui.screens.MechanicDashboardScreen
+import com.codegrogu.guava.ui.screens.ManagerDashboardScreen
+import com.codegrogu.guava.ui.screens.SignUpScreen
+import com.codegrogu.guava.viewmodel.AppViewModel
+import com.codegrogu.guava.viewmodel.UiEvent
+import kotlinx.coroutines.launch
+
 @Composable
 fun AppNavigation(
     appViewModel: AppViewModel,
@@ -12,7 +32,10 @@ fun AppNavigation(
         appViewModel.uiEvents.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event)
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = SnackbarDuration.Short
+                    )
                 }
             }
         }
@@ -21,12 +44,9 @@ fun AppNavigation(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                val visuals = data.visuals as? AppSnackbarVisuals
-                val isError = visuals?.isError ?: true
+                // Basic Snackbar implementation; can be customized further if AppSnackbarVisuals is defined
                 Snackbar(
-                    snackbarData = data,
-                    containerColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = if (isError) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimaryContainer
+                    snackbarData = data
                 )
             }
         }
@@ -82,19 +102,16 @@ fun AppNavigation(
             }
 
             composable<Destination.MechanicDashboard> {
-                // Example of a Dashboard that can navigate to Check-In
                 MechanicDashboardScreen(
                     userName = uiState.currentUser?.name ?: "Mechanic",
                     onNavigateToCheckIn = { navController.navigate(Destination.CheckIn) }
                 )
             }
 
-            // --- THE NEW CHECK-IN ROUTE ---
             composable<Destination.CheckIn> {
                 CheckInScreen(
                     viewModel = appViewModel,
                     onCheckInComplete = {
-                        // Return to Dashboard and clear the Check-In screen from backstack
                         navController.navigate(Destination.MechanicDashboard) {
                             popUpTo(Destination.CheckIn) { inclusive = true }
                         }
@@ -104,12 +121,19 @@ fun AppNavigation(
             }
 
             composable<Destination.ManagerDashboard> {
-                Text("Manager Dashboard - Welcome ${uiState.currentUser?.name}")
+                ManagerDashboardScreen(
+                    appViewModel = appViewModel,
+                    onLogout = {
+                        authService.logoutUser()
+                        navController.navigate(Destination.Login) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }
 
-    // Role-based navigation reaction
     LaunchedEffect(uiState.currentUser, uiState.userRole) {
         if (uiState.currentUser != null) {
             when (uiState.userRole) {
