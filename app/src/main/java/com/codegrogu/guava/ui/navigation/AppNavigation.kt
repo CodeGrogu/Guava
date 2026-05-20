@@ -57,12 +57,9 @@ fun AppNavigation(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                val visuals = data.visuals as? AppSnackbarVisuals
-                val isError = visuals?.isError ?: true
+                // Basic Snackbar implementation; can be customized further if AppSnackbarVisuals is defined
                 Snackbar(
-                    snackbarData = data,
-                    containerColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = if (isError) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimaryContainer
+                    snackbarData = data
                 )
             }
         }
@@ -124,7 +121,6 @@ fun AppNavigation(
             }
 
             composable<Destination.MechanicDashboard> {
-                // Example of a Dashboard that can navigate to Check-In
                 MechanicDashboardScreen(
                     userName = uiState.currentUser?.name ?: "Mechanic",
                     onNavigateToCheckIn = {
@@ -148,12 +144,10 @@ fun AppNavigation(
                 )
             }
 
-            // --- THE NEW CHECK-IN ROUTE ---
             composable<Destination.CheckIn> {
                 CheckInScreen(
                     viewModel = appViewModel,
                     onCheckInComplete = {
-                        // Return to Dashboard and clear the Check-In screen from backstack
                         navController.navigate(Destination.MechanicDashboard) {
                             popUpTo(Destination.CheckIn) { inclusive = true }
                             launchSingleTop = true
