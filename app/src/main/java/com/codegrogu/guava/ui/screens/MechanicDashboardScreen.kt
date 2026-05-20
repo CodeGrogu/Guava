@@ -88,6 +88,7 @@ fun MechanicDashboardScreen(
                 onClick = onNavigateToCheckIn,
                 modifier = Modifier.fillMaxWidth()
             )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
