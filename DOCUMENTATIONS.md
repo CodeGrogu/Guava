@@ -155,3 +155,56 @@ The models expect tasks to live here in Firestore:
 **Next Steps**
 
 Next commit will create `RepairService.kt` to read and write these tasks to Firestore in real-time.
+
+---
+
+### Commit 2: RepairService — Read-Only Functions
+
+**Files Created**
+| File | Action | Location |
+|------|--------|----------|
+| `RepairService.kt` | Created | `service/` |
+
+**What It Does**
+
+This commit introduces `RepairService` as a singleton object that handles all real-time communication with Firestore for repair tasks. It contains:
+
+1. **`convertFirestoreDocToRepairTask()` (Private Helper)**
+   - Takes raw Firestore document data and converts it to our `RepairTask` Kotlin model
+   - Handles extraction and mapping of all fields
+   - Safely handles missing fields with default values
+   - Converts the `notes` array from Firestore Maps into `MechanicNote` objects
+
+2. **`subscribeToVehicleTasks(vehicleId: String): Flow<List<RepairTask>>`**
+   - Returns a **Flow** — think of it as a "stream" of data updates
+   - Sets up a Firestore snapshot listener that watches `/vehicles/{id}/tasks`
+   - Automatically sends task updates whenever ANY change happens in Firestore
+   - Multiple mechanics viewing the same vehicle will all receive the same updates in real-time
+   - Automatically filters out the `_init` placeholder document (created during check-in)
+   - Cleans up the listener when the screen navigates away (saves bandwidth/battery)
+
+**Key Concept: Flow as a Real-Time Stream**
+
+A Flow is like a fire hose of data:
+- Instead of asking Firestore "give me tasks" once, you open the valve and say "tell me whenever tasks change"
+- Firestore pushes updates immediately
+- The UI screen (composables) listens to this stream and re-renders when data arrives
+- Multiple mechanics seeing the same vehicle instantly see each other's changes
+
+**Firestore Queries This Creates**
+
+```kotlin
+// Listen to all tasks for a specific vehicle, forever
+/vehicles/{vehicleId}/tasks (all documents)
+```
+
+**Error Handling**
+
+- If the Firestore listener encounters an error (network down, permission denied), the Flow closes with the error
+- If a document fails to convert, it's skipped and logged
+- Composables can catch these errors with `try-catch` in their `LaunchedEffect`
+
+**Next Steps**
+
+Next commit will add write functions to `RepairService` (toggle task completion and add notes).
+
