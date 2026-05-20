@@ -248,18 +248,29 @@ object RepairService {
         vehicleId: String,
         taskId: String,
         noteText: String,
+        noteImageUrl: String?,
         mechanicUid: String,
         mechanicName: String
     ): Result<Unit> {
         return try {
             // Create the note object as a Map (this is what gets stored in Firestore)
-            val newNote = mapOf(
-                "text" to noteText,
+            val cleanedText = noteText.trim()
+            val cleanedImageUrl = noteImageUrl?.trim().orEmpty()
+
+            if (cleanedText.isBlank() && cleanedImageUrl.isBlank()) {
+                return Result.failure(IllegalArgumentException("Add a note or attach a photo."))
+            }
+
+            val newNote = mutableMapOf<String, Any>(
+                "text" to cleanedText,
                 "mechanicUid" to mechanicUid,
                 "mechanicName" to mechanicName,
-                // Exact timestamp when the note is created on the server (accurate)
-                "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                "timestamp" to System.currentTimeMillis()
             )
+
+            if (cleanedImageUrl.isNotBlank()) {
+                newNote["imageUrl"] = cleanedImageUrl
+            }
 
             // Get a reference to the task document
             // Use arrayUnion() to APPEND the note to the existing notes array
