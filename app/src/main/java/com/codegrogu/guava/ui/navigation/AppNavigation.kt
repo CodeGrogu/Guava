@@ -7,12 +7,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.codegrogu.guava.model.UserRole
 import com.codegrogu.guava.service.AuthService
 import com.codegrogu.guava.ui.screens.LoginScreen
 import com.codegrogu.guava.ui.screens.SignUpScreen
 import com.codegrogu.guava.ui.screens.MechanicDashboardScreen
 import com.codegrogu.guava.ui.screens.CheckInScreen
+import com.codegrogu.guava.ui.screens.ManagerDashboardScreen
+import com.codegrogu.guava.ui.screens.RepairWorkflowScreen
 import com.codegrogu.guava.viewmodel.AppViewModel
 import com.codegrogu.guava.viewmodel.UiEvent
 import com.codegrogu.guava.ui.components.AppSnackbarVisuals
@@ -27,6 +30,14 @@ fun AppNavigation(
     val uiState by appViewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    fun logoutToLogin(popUpDestination: Destination) {
+        authService.logoutUser()
+        navController.navigate(Destination.Login) {
+            popUpTo(popUpDestination) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
 
     LaunchedEffect(Unit) {
         appViewModel.uiEvents.collect { event ->
