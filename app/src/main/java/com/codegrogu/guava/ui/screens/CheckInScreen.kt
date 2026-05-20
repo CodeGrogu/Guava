@@ -299,7 +299,7 @@ fun CheckInScreen(
                                 conditionImageUrl = imageUrls.first(),
                                 conditionImageUrls = imageUrls
                             )
-
+                            
                             // Save check-in
                             val checkInResult =
                                 VehicleService.createCheckInRecord(
