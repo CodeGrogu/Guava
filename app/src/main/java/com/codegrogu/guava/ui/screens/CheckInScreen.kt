@@ -3,11 +3,14 @@ package com.codegrogu.guava.ui.screens
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.*
@@ -26,10 +29,13 @@ import com.codegrogu.guava.service.VehicleService
 import com.codegrogu.guava.ui.components.CameraCapture
 import com.codegrogu.guava.ui.components.GarageBackground
 import com.codegrogu.guava.ui.components.GarageButton
+import com.codegrogu.guava.ui.components.GarageImagePreview
 import com.codegrogu.guava.ui.components.GarageTextField
 import com.codegrogu.guava.ui.theme.SafetyOrange
 import com.codegrogu.guava.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
+
+private const val MAX_CHECK_IN_PHOTOS = 3
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,32 +44,38 @@ fun CheckInScreen(
     onCheckInComplete: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    val scope   = rememberCoroutineScope()
 
-    // Read current mechanic from global state
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // FIX 2: currentUser comes from uiState
     val uiState by viewModel.uiState.collectAsState()
-    val currentUser = uiState.currentUser
 
     // Form state
-    var licensePlate    by remember { mutableStateOf("") }
-    var initialKm       by remember { mutableStateOf("") }
-    var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var licensePlate by remember { mutableStateOf("") }
+    var initialKm by remember { mutableStateOf("") }
+    val capturedImageUris = remember { mutableStateListOf<Uri>() }
+    var cameraSessionKey by remember { mutableIntStateOf(0) }
 
-    // Submission state
-    var isSubmitting  by remember { mutableStateOf(false) }
-    var errorMessage  by remember { mutableStateOf<String?>(null) }
+    // UI state
+    var isSubmitting by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
 
         GarageBackground()
 
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
+
                 TopAppBar(
                     title = {
+
                         Column {
+
                             Text(
                                 text = "VEHICLE CHECK-IN",
                                 fontFamily = FontFamily.Monospace,
@@ -71,6 +83,7 @@ fun CheckInScreen(
                                 letterSpacing = 2.sp,
                                 style = MaterialTheme.typography.titleMedium
                             )
+
                             Text(
                                 text = "Log new truck arrival",
                                 fontFamily = FontFamily.Monospace,
@@ -79,15 +92,20 @@ fun CheckInScreen(
                             )
                         }
                     },
+
                     navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
+
+                        IconButton(
+                            onClick = onNavigateBack
+                        ) {
                             Icon(
-                                imageVector = Icons.Filled.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
                                 tint = SafetyOrange
                             )
                         }
                     },
+
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent
                     )
@@ -106,78 +124,145 @@ fun CheckInScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // ── License Plate ────────────────────────
+                // License Plate
                 GarageTextField(
                     value = licensePlate,
-                    onValueChange = { licensePlate = it.uppercase() },
+                    onValueChange = {
+                        licensePlate = it.uppercase()
+                    },
                     label = "Truck License Plate / ID",
-                    leadingIcon = Icons.Filled.DirectionsCar,
+                    leadingIcon = Icons.Default.DirectionsCar,
                     keyboardOptions = KeyboardOptions.Default
                 )
 
-                // ── Initial Kilometers ───────────────────
+                // Odometer
                 GarageTextField(
                     value = initialKm,
-                    onValueChange = { km ->
-                        // Only allow numeric input
-                        if (km.all { it.isDigit() }) initialKm = km
+                    onValueChange = { value ->
+
+                        if (value.all { it.isDigit() }) {
+                            initialKm = value
+                        }
                     },
                     label = "Odometer Reading (km)",
-                    leadingIcon = Icons.Filled.Speed,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    leadingIcon = Icons.Default.Speed,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
+                    )
                 )
 
-                // ── Camera Capture ───────────────────────
-                CameraCapture(
-                    onImageCaptured = { uri ->
-                        capturedImageUri = uri
-                    }
-                )
+                // Camera
+                key(cameraSessionKey) {
+                    CameraCapture(
+                        onImageCaptured = { uri ->
+                            if (capturedImageUris.size < MAX_CHECK_IN_PHOTOS) {
+                                capturedImageUris.add(uri)
+                            } else {
+                                errorMessage = "Maximum $MAX_CHECK_IN_PHOTOS condition photos allowed."
+                            }
+                            cameraSessionKey += 1
+                        },
+                        onImageCleared = {}
+                    )
+                }
 
-                // ── Validation error ─────────────────────
-                errorMessage?.let { msg ->
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = MaterialTheme.shapes.small,
+                if (capturedImageUris.isNotEmpty()) {
+                    Text(
+                        text = "${capturedImageUris.size} CONDITION PHOTO${if (capturedImageUris.size == 1) "" else "S"} CAPTURED",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
+                    )
+
+                    Text(
+                        text = "Maximum $MAX_CHECK_IN_PHOTOS photos while Firebase Storage is unavailable.",
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        items(capturedImageUris, key = { it.toString() }) { uri ->
+                            Box(
+                                modifier = Modifier
+                                    .size(88.dp)
+                            ) {
+                                GarageImagePreview(
+                                    imageUrl = uri.toString(),
+                                    contentDescription = "Captured condition photo",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+
+                                IconButton(
+                                    onClick = { capturedImageUris.remove(uri) },
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Close,
+                                        contentDescription = "Remove photo",
+                                        tint = SafetyOrange
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Error banner
+                errorMessage?.let { message ->
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+
                         Text(
-                            text = "⚠ $msg",
+                            text = "⚠ $message",
+                            modifier = Modifier.padding(12.dp),
                             fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(12.dp)
+                            color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // ── Submit Button ────────────────────────
+                // Submit button
                 GarageButton(
                     text = "SUBMIT CHECK-IN",
                     isLoading = isSubmitting,
                     enabled = !isSubmitting,
                     onClick = {
-                        // ── Validation (FR-1.1, FR-1.3) ──
+
                         when {
+
                             licensePlate.isBlank() -> {
                                 errorMessage = "License plate / ID is required."
                                 return@GarageButton
                             }
+
                             initialKm.isBlank() -> {
                                 errorMessage = "Odometer reading is required."
                                 return@GarageButton
                             }
+
                             initialKm.toIntOrNull() == null -> {
-                                errorMessage = "Odometer reading must be a number."
+                                errorMessage = "Odometer must be a valid number."
                                 return@GarageButton
                             }
-                            capturedImageUri == null -> {
-                                errorMessage = "A condition photo is required."
+
+                            capturedImageUris.isEmpty() -> {
+                                errorMessage = "At least one condition photo is required."
                                 return@GarageButton
                             }
-                            currentUser == null -> {
+
+                            uiState.currentUser == null -> {
                                 errorMessage = "Session expired. Please log in again."
                                 return@GarageButton
                             }
@@ -187,45 +272,66 @@ fun CheckInScreen(
                         isSubmitting = true
 
                         scope.launch {
-                            // Step 1 — Upload compressed image (NFR-5)
-                            val uploadResult = VehicleService.uploadConditionImage(
-                                capturedImageUri!!
-                            )
 
-                            if (uploadResult.isFailure) {
-                                errorMessage = "Image upload failed: " +
-                                        (uploadResult.exceptionOrNull()?.message ?: "Unknown error")
-                                isSubmitting = false
-                                return@launch
+                            val imageUrls = mutableListOf<String>()
+
+                            for (imageUri in capturedImageUris) {
+                                val uploadResult = VehicleService.uploadConditionImage(imageUri)
+
+                                if (uploadResult.isFailure) {
+                                    errorMessage =
+                                        "Image upload failed: ${
+                                            uploadResult.exceptionOrNull()?.message
+                                                ?: "Unknown error"
+                                        }"
+
+                                    isSubmitting = false
+                                    return@launch
+                                }
+
+                                imageUrls.add(uploadResult.getOrThrow())
                             }
 
-                            val imageUrl = uploadResult.getOrThrow()
-
-                            // Step 2 — Save check-in record to Firestore
+                            // Create vehicle object
                             val vehicle = Vehicle(
-                                licensePlate      = licensePlate.trim(),
-                                initialKm         = initialKm.toInt(),
-                                conditionImageUrl = imageUrl
+                                licensePlate = licensePlate.trim(),
+                                initialKm = initialKm.toInt(),
+                                conditionImageUrl = imageUrls.first(),
+                                conditionImageUrls = imageUrls
                             )
 
-                            val checkInResult = VehicleService.createCheckInRecord(
-                                vehicle         = vehicle,
-                                currentUserUid  = currentUser.id,
-                                currentUserName = currentUser.name
-                            )
+                            // Save check-in
+                            val checkInResult =
+                                VehicleService.createCheckInRecord(
+                                    vehicle = vehicle,
+
+                                    // FIX 1: use .id not .uid
+                                    currentUserUid =
+                                        uiState.currentUser!!.id,
+
+                                    currentUserName =
+                                        uiState.currentUser!!.name
+                                )
 
                             isSubmitting = false
 
-                            checkInResult.onSuccess {
-                                Toast.makeText(
-                                    context,
-                                    "✓ ${licensePlate.trim()} checked in successfully",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                onCheckInComplete()
-                            }.onFailure { e ->
-                                errorMessage = "Check-in failed: ${e.message}"
-                            }
+                            checkInResult
+                                .onSuccess {
+
+                                    Toast.makeText(
+                                        context,
+                                        "✓ ${licensePlate.trim()} checked in successfully",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    onCheckInComplete()
+                                }
+
+                                .onFailure { error ->
+
+                                    errorMessage =
+                                        "Check-in failed: ${error.message}"
+                                }
                         }
                     }
                 )
