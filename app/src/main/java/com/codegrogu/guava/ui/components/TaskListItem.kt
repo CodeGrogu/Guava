@@ -1,5 +1,6 @@
 package com.codegrogu.guava.ui.components
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -8,21 +9,27 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,8 +68,8 @@ fun TaskListItem(
     onTaskToggle: (isComplete: Boolean) -> Unit,
 
     // Callback: Called when the mechanic saves a new note
-    // Passes: the note text they typed
-    onNoteAdded: (noteText: String) -> Unit,
+    // Passes: the note text and optional attached image URI
+    onNoteAdded: (noteText: String, imageUri: Uri?) -> Unit,
 
     // Optional modifier for styling/layout
     modifier: Modifier = Modifier
@@ -73,6 +80,9 @@ fun TaskListItem(
 
     // Local state: The text the mechanic is typing in the note input field
     val noteInputText = remember { mutableStateOf("") }
+    val attachedImageUri = remember { mutableStateOf<Uri?>(null) }
+    val showNoteCamera = remember { mutableStateOf(false) }
+    val noteCameraSessionKey = remember { mutableStateOf(0) }
 
     // The entire component is a Column so we can stack multiple sections
     Column(
@@ -123,15 +133,12 @@ fun TaskListItem(
                 modifier = Modifier.weight(1f)
             )
 
-            // Expand/Collapse icon (only show if there are notes or task is complete)
-            if (task.notes.isNotEmpty() || task.isCompleted) {
-                Icon(
-                    imageVector = if (isNotesExpanded.value) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (isNotesExpanded.value) "Collapse notes" else "Expand notes",
-                    tint = SafetyOrange,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+            Icon(
+                imageVector = if (isNotesExpanded.value) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (isNotesExpanded.value) "Collapse notes" else "Expand notes",
+                tint = SafetyOrange,
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
 
         // ─────────────────────────────────────────────────────────
@@ -206,6 +213,17 @@ fun TaskListItem(
                             ),
                             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
                         )
+
+                        if (note.imageUrl.isNotBlank()) {
+                            GarageImagePreview(
+                                imageUrl = note.imageUrl,
+                                contentDescription = "Mechanic note photo",
+                                modifier = Modifier
+                                    .padding(top = 4.dp, bottom = 8.dp)
+                                    .height(140.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
                     }
                 }
 
@@ -229,19 +247,73 @@ fun TaskListItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            attachedImageUri.value?.let { uri ->
+                GarageImagePreview(
+                    imageUrl = uri.toString(),
+                    contentDescription = "Attached note photo",
+                    modifier = Modifier
+                        .padding(start = 40.dp)
+                        .fillMaxWidth()
+                        .height(140.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            OutlinedButton(
+                onClick = { showNoteCamera.value = !showNoteCamera.value },
+                modifier = Modifier.padding(start = 40.dp),
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
+                    brush = SolidColor(SafetyOrange)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PhotoCamera,
+                    contentDescription = null,
+                    tint = SafetyOrange,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (attachedImageUri.value == null) "ATTACH PHOTO" else "CHANGE PHOTO",
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    color = SafetyOrange,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            if (showNoteCamera.value) {
+                Spacer(modifier = Modifier.height(8.dp))
+                key(noteCameraSessionKey.value) {
+                    CameraCapture(
+                        onImageCaptured = { uri ->
+                            attachedImageUri.value = uri
+                            showNoteCamera.value = false
+                            noteCameraSessionKey.value += 1
+                        },
+                        onImageCleared = {
+                            attachedImageUri.value = null
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // SAVE NOTE BUTTON: When tapped, send the note text to the parent
             // Then clear the input field so it's ready for the next note
             GarageButton(
                 text = "SAVE NOTE",
                 onClick = {
-                    if (noteInputText.value.isNotBlank()) {
-                        onNoteAdded(noteInputText.value)
+                    if (noteInputText.value.isNotBlank() || attachedImageUri.value != null) {
+                        onNoteAdded(noteInputText.value, attachedImageUri.value)
                         noteInputText.value = ""  // Clear the input
+                        attachedImageUri.value = null
                     }
                 },
                 modifier = Modifier.padding(start = 40.dp),
                 color = SafetyOrange,
-                enabled = noteInputText.value.isNotBlank()
+                enabled = noteInputText.value.isNotBlank() || attachedImageUri.value != null
             )
         }
     }
