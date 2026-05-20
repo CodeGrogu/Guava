@@ -160,7 +160,7 @@ fun CameraCapture(
                             onClick = {
                                 permissionLauncher.launch(android.Manifest.permission.CAMERA)
                             },
-                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                            border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
                                 brush = androidx.compose.ui.graphics.SolidColor(SafetyOrange)
                             )
                         ) {
@@ -248,9 +248,12 @@ fun CameraCapture(
 
                 // Retake button
                 OutlinedButton(
-                    onClick = { capturedImageUri = null },
+                    onClick = {
+                        capturedImageUri = null
+                        onImageCleared()
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
                         brush = androidx.compose.ui.graphics.SolidColor(SafetyOrange)
                     )
                 ) {
