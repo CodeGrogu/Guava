@@ -281,3 +281,405 @@ Both functions wrap their Firestore calls in try-catch:
 
 Next commit will create the `TaskListItem` composable (basic UI for displaying a single task).
 
+---
+
+### Commit 4: TaskListItem Component — Basic UI
+
+**Files Created**
+| File | Action | Location |
+|------|--------|----------|
+| `TaskListItem.kt` | Created | `ui/components/` |
+
+**What It Does**
+
+This commit introduces `TaskListItem`, a reusable Jetpack Compose component that displays a single repair task as a row. It's the building block that RepairWorkflowScreen will use to populate its task list.
+
+**Component Structure**
+
+The TaskListItem displays:
+
+1. **Checkbox (Material Design)**
+   - Status: checked if task is complete, unchecked if incomplete
+   - When tapped: calls `onTaskToggle(newState)` callback
+   - Styled with `SafetyOrange` (checked) and light gray (unchecked) colors
+   - Matches the industrial theme
+
+2. **Task Description (Text)**
+   - The task title (e.g., "Replace clutch", "Fix brake pads")
+   - Uses Monospace font to match the garage theme
+   - Bold/semibold weight for readability
+
+3. **"Completed by [Name]" (Conditional Text)**
+   - Only shows if the task is marked complete (`isCompleted == true`)
+   - Shows the name of the mechanic who completed it (in `SafetyOrange` color)
+   - Positioned with left padding (40.dp) to align under the task description
+   - Makes it easy to see who did what work and when
+
+**Component Signature**
+
+```kotlin
+@Composable
+fun TaskListItem(
+    task: RepairTask,                          // The task data
+    currentMechanicUid: String,                // Current mechanic's UID
+    currentMechanicName: String,               // Current mechanic's name
+    onTaskToggle: (isComplete: Boolean) -> Unit, // Callback when checkbox tapped
+    modifier: Modifier = Modifier              // Optional layout modifier
+)
+```
+
+**Layout**
+
+```
+┌─────────────────────────────────────────┐
+│ ☐ Replace clutch                         │  ← Row 1: Checkbox + Description
+│   Completed by: Ahmed                    │  ← Row 2: Only if completed
+└─────────────────────────────────────────┘
+```
+
+**Design System Compliance**
+
+- ✅ Uses `SafetyOrange` for accents (checkbox, completed-by text)
+- ✅ Uses `Monospace` font for all text
+- ✅ Follows Material Design 3 checkbox component
+- ✅ Consistent padding (16.dp) with industrial theme
+- ✅ Clean, readable layout matching other screens
+
+**How It's Used in RepairWorkflowScreen**
+
+In the next commit, RepairWorkflowScreen will use this like:
+```kotlin
+LazyColumn {
+    items(tasks) { task ->
+        TaskListItem(
+            task = task,
+            currentMechanicUid = currentUser.uid,
+            currentMechanicName = currentUser.name,
+            onTaskToggle = { isComplete ->
+                // Call RepairService to update Firestore
+                RepairService.toggleTaskCompletion(...)
+            }
+        )
+    }
+}
+```
+
+**Next Steps**
+
+Next commit will extend TaskListItem with a collapsible notes section (Commit 5).
+
+---
+
+### Commit 5: Extend TaskListItem — Add Notes Section
+
+**Files Modified**
+| File | Action | Location |
+|------|--------|----------|
+| `TaskListItem.kt` | Modified | `ui/components/` — added notes section |
+
+**What It Does**
+
+This commit extends `TaskListItem` with a collapsible notes section. When the mechanic expands the notes section, they can:
+1. **View existing notes** — See all notes other mechanics have written, tagged with their names
+2. **Write a new note** — Type a note in an input field
+3. **Save the note** — Tap "SAVE NOTE" button to send it to Firestore
+
+**New Features Added**
+
+1. **Expand/Collapse Button**
+   - Shows an up/down arrow icon (only if there are notes or task is complete)
+   - Tapping the row (except the checkbox) toggles expansion
+   - Starts collapsed by default (saves screen space)
+
+2. **Mechanic Notes Display**
+   - Shows all existing notes with "— [MechanicName]" prefix
+   - Each note is displayed below the mechanic's name in monospace font
+   - Notes are read-only (mechanics can only add, not edit)
+   - Maintains chronological order (first note written, first displayed)
+
+3. **Note Input Section**
+   - `OutlinedTextField` for typing the note text (max 3 lines)
+   - Limited to monospace font for consistency
+   - "SAVE NOTE" button styled with `SafetyOrange`
+   - Button is disabled if input is empty
+
+**Component Signature (Updated)**
+
+```kotlin
+@Composable
+fun TaskListItem(
+    task: RepairTask,
+    currentMechanicUid: String,
+    currentMechanicName: String,
+    onTaskToggle: (isComplete: Boolean) -> Unit,
+    onNoteAdded: (noteText: String) -> Unit,  // NEW callback
+    modifier: Modifier = Modifier
+)
+```
+
+**Layout (Expanded)**
+
+```
+┌────────────────────────────────────────────┐
+│ ☐ Replace clutch              ▲            │  ← Row 1: checkbox + desc + expand icon
+│   Completed by: Ahmed                       │  ← Row 2: only if completed
+│                                              │
+│   MECHANIC NOTES:                           │  ← Row 3: notes section (when expanded)
+│   — Ahmed                                    │
+│     Ordered replacement part from supplier   │
+│                                              │
+│   — Mohamed                                  │
+│     Part arrived, starting replacement       │
+│                                              │
+│   [Note input field                    ]    │  ← Row 4: input
+│                                              │
+│   [SAVE NOTE]                          [  ] │  ← Row 5: button
+└────────────────────────────────────────────┘
+```
+
+**How Notes Work**
+
+- Each note is tagged with who wrote it (mechanic name)
+- Notes are stored in the task's `notes` array in Firestore
+- New notes are appended automatically via `arrayUnion()`
+- No notes are deleted or edited — they form an audit trail
+
+**Next Steps**
+
+Next commit will create RepairWorkflowScreen (the main screen).
+
+---
+
+### Commit 6: Create RepairWorkflowScreen — Main UI
+
+**Files Created**
+| File | Action | Location |
+|------|--------|----------|
+| `RepairWorkflowScreen.kt` | Created | `ui/screens/` |
+
+**What It Does**
+
+This is the MAIN SCREEN where all the real-time magic happens! It's where mechanics see and work on all repair tasks for a vehicle.
+
+**Screen Flow**
+
+1. **Screen Loads** → `RepairWorkflowScreen` is displayed
+2. **LaunchedEffect Triggers** → Sets up the real-time listener by calling `subscribeToVehicleTasks(vehicleId)`
+3. **Initial Data Loaded** → Firestore sends current tasks through the Flow
+4. **Screen Shows Tasks** → All tasks displayed in a scrollable LazyColumn
+5. **Another Mechanic Updates a Task** → Firestore listener fires immediately
+6. **New Data Emitted** → Flow sends updated task list
+7. **Screen Re-renders** → All viewing mechanics see the change in real-time
+
+**Component Sections**
+
+1. **Header**
+   - Shows vehicle ID (e.g., "VEHICLE: N 123-456 WB")
+   - Shows task count (e.g., "3 tasks")
+
+2. **Loading State**
+   - Shows spinner + "Loading tasks..." while waiting for Firestore
+   - Important for slow networks
+
+3. **Empty State**
+   - Shows "No repair tasks yet" if vehicle has no tasks
+   - Useful during initial setup
+
+4. **Task List (Main Content)**
+   - LazyColumn with `TaskListItem` components
+   - Each task has unique key (task.id) for efficient re-composition
+   - Scrollable if many tasks
+
+5. **Snackbar for Feedback**
+   - "Task completed!" when mechanic marks task done
+   - "Note saved!" when mechanic saves a note
+   - Error messages if Firestore operations fail
+
+**The Real-Time Magic**
+
+```
+┌─────────────────────────────────────────┐
+│ RepairWorkflowScreen (Mechanic A)       │
+│ ┌─────────────────────────────────────┐ │
+│ │ ☐ Replace clutch            ▼       │ │
+│ └─────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────┐ │
+│ │ ☐ Fix brakes                ▼       │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+           ↑
+           │ (Mechanic A sees checkbox)
+           │
+      Meanwhile in Firestore...
+           │
+    Mechanic B marks task complete
+           │
+           ↓
+      Firestore emits new data through Flow
+           │
+           ↓
+    RepairWorkflowScreen re-renders
+           │
+           ↓
+┌─────────────────────────────────────────┐
+│ RepairWorkflowScreen (Mechanic A)       │
+│ ┌─────────────────────────────────────┐ │
+│ │ ☑ Replace clutch            ▼       │ │  ← Auto-updated! No refresh button!
+│ │   Completed by: Mechanic B         │ │
+│ └─────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────┐ │
+│ │ ☐ Fix brakes                ▼       │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+```
+
+**Component Signature**
+
+```kotlin
+@Composable
+fun RepairWorkflowScreen(
+    vehicleId: String,           // Which vehicle to load tasks for
+    currentUser: User,           // Current mechanic (for attribution)
+    modifier: Modifier = Modifier
+)
+```
+
+**Callback Handlers**
+
+- **onTaskToggle**: Calls `RepairService.toggleTaskCompletion()` in a coroutine
+  - Shows success/error snackbar
+  - Flow automatically emits new data → screen re-renders
+  
+- **onNoteAdded**: Calls `RepairService.addNoteToTask()` in a coroutine
+  - Shows success/error snackbar
+  - Flow automatically emits new data → screen re-renders with new note
+
+**Design System Compliance**
+
+- ✅ Uses industrial theme colors (SafetyOrange, Monospace fonts)
+- ✅ Matches existing screen layouts
+- ✅ Clear loading/empty states
+- ✅ Humanized error messages
+- ✅ Smooth scrolling LazyColumn
+
+**Next Steps**
+
+Next commit will update TODO.md to mark Phase 3 complete, and finalize DOCUMENTATIONS.md.
+
+---
+
+### Commit 7: Integration & Polish — Update Docs & Navigation
+
+**Files Modified**
+| File | Action | Location |
+|------|--------|----------|
+| `DOCUMENTATIONS.md` | Modified | Updated with Phase 3 summary |
+| `TODO.md` | Modified | Mark Phase 3 tasks complete |
+
+**What It Does**
+
+This commit finalizes Phase 3 by:
+1. Completing all documentation for Commits 4, 5, 6
+2. Marking Phase 3 tasks as complete in TODO.md
+3. Creating a summary of the real-time collaboration system
+
+**Phase 3 Summary**
+
+**What We Built:**
+- ✅ `RepairTask` model with mechanic attribution
+- ✅ `RepairService` with real-time Flow listeners and write functions
+- ✅ `TaskListItem` component with collapsible notes
+- ✅ `RepairWorkflowScreen` main UI with real-time updates
+
+**How It Works Together:**
+
+```
+Mechanic Opens Vehicle
+        ↓
+RepairWorkflowScreen displays
+        ↓
+subscribeToVehicleTasks() opens Firestore listener
+        ↓
+Flow<List<RepairTask>> emitted immediately
+        ↓
+Screen shows all tasks (LazyColumn of TaskListItem)
+        ↓
+Mechanic taps checkbox OR adds note
+        ↓
+onTaskToggle / onNoteAdded callback fires
+        ↓
+coroutineScope.launch starts async operation
+        ↓
+RepairService.toggleTaskCompletion() / addNoteToTask() called
+        ↓
+Firestore document updated with mechanic attribution
+        ↓
+Firestore listener detects change
+        ↓
+NEW Flow emission with updated data
+        ↓
+Screen re-renders automatically (NFR-2: Visual updates)
+        ↓
+ALL mechanics viewing vehicle see change in REAL-TIME
+        ↓
+Snackbar shows success/error message
+```
+
+**Key NFRs Implemented:**
+
+- **NFR-1 (Accountability)**: Every task toggle and note is tagged with mechanic UID/name
+- **NFR-2 (Real-time updates)**: When mechanic A updates, mechanic B's screen updates automatically (zero refresh button needed)
+
+**Integration Notes**
+
+- RepairWorkflowScreen needs to be added to the Mechanic Navigation Graph
+- Pass `vehicleId` from parent navigation
+- Pass `currentUser` from AppViewModel
+- Example:
+  ```kotlin
+  NavHost(navController, startDestination = "vehicleList") {
+      composable("repairWorkflow/{vehicleId}") { backStackEntry ->
+          val vehicleId = backStackEntry.arguments?.getString("vehicleId") ?: ""
+          RepairWorkflowScreen(
+              vehicleId = vehicleId,
+              currentUser = appViewModel.currentUser.value
+          )
+      }
+  }
+  ```
+
+**Testing Recommendations**
+
+Open RepairWorkflowScreen on TWO devices/simulators with the same vehicleId:
+1. On Device A: Mark a task complete
+2. On Device B: Watch it update automatically (no refresh!)
+3. On Device B: Add a note
+4. On Device A: See the note appear immediately
+5. Verify mechanic names appear with every action
+
+**Code Quality**
+
+- ✅ Humanized comments throughout all files
+- ✅ Simple Kotlin (no complex patterns)
+- ✅ Proper error handling with Result<T>
+- ✅ No memory leaks (Flow listeners cleaned up when screen closes)
+- ✅ Snackbar feedback for all user actions
+
+**What's NOT Implemented (For Future)**
+
+- No retry logic for failed Firestore operations (could add)
+- No optimistic updates (updates only show after Firestore confirms)
+- No sorting/filtering (could add in future)
+- No task creation UI (Manager does this separately)
+
+---
+
+## Summary: Phase 3 Complete
+
+Phase 3 creates a **real-time collaborative repair management system**. Multiple mechanics can work on the same vehicle and see each other's progress instantly. Every action is logged for accountability, and the UI provides clear visual feedback for all operations.
+
+**Files Created**: 4 files
+**Files Modified**: 1 file (docs + TODO)
+**Key Features**: Real-time Flow listeners, mechanic attribution, collapsible notes, error handling
+**Learning Level**: Beginner-friendly Kotlin (no complex patterns)
+

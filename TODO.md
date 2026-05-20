@@ -115,7 +115,8 @@ This document outlines the detailed implementation plan, structured chronologica
 ---
 
 ## Phase 3: Collaborative Repairs Module (Priority 3)
-**Assignee: Member 3**
+**Assignee: Member 3 (Enoch)**
+**Status: COMPLETE ✅**
 
 ### 8. Repair Service (Real-time Sync)
 - **File Name**: `RepairService.kt`
@@ -124,10 +125,10 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `FirebaseConfig.kt`
 - **Where it will be called**: `RepairWorkflowScreen` Composable, `TaskListItem` Composable
 - **Tasks**:
-    - [ ] Create `subscribeToVehicleTasks(vehicleId: String): Flow<List<RepairTask>>` using Firestore `snapshotFlow` to listen for real-time changes.
-    - [ ] Create `toggleTaskStatus(vehicleId: String, taskId: String, isComplete: Boolean, mechanicId: String, mechanicName: String)` suspend function.
-    - [ ] Create `updateTaskNote(vehicleId: String, taskId: String, noteText: String, mechanicId: String, mechanicName: String)` suspend function.
-    - [ ] Ensure all updates append the mechanic's ID/Name to enforce accountability (NFR-1).
+    - [x] Create `subscribeToVehicleTasks(vehicleId: String): Flow<List<RepairTask>>` using Firestore `snapshotFlow` to listen for real-time changes.
+    - [x] Create `toggleTaskStatus(vehicleId: String, taskId: String, isComplete: Boolean, mechanicId: String, mechanicName: String)` suspend function.
+    - [x] Create `updateTaskNote(vehicleId: String, taskId: String, noteText: String, mechanicId: String, mechanicName: String)` suspend function.
+    - [x] Ensure all updates append the mechanic's ID/Name to enforce accountability (NFR-1).
 
 ### 9. Task List Item Component
 - **File Name**: `TaskListItem.kt`
@@ -136,12 +137,12 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: AppViewModel
 - **Where it will be called**: `RepairWorkflowScreen` Composable
 - **Tasks**:
-    - [ ] Design the task row layout using Compose (Task title, native Material Checkbox).
-    - [ ] Add sub-text displaying "Completed by: [Name]" conditionally when checked.
-    - [ ] Add a collapsible/expandable section for "Mechanic Notes".
-    - [ ] Build an input field and "Save Note" button within the expanded section.
-    - [ ] Display existing notes with the name of the mechanic who wrote them.
-    - [ ] Consume AppViewModel for current mechanic details directly to execute task toggles/notes.
+    - [x] Design the task row layout using Compose (Task title, native Material Checkbox).
+    - [x] Add sub-text displaying "Completed by: [Name]" conditionally when checked.
+    - [x] Add a collapsible/expandable section for "Mechanic Notes".
+    - [x] Build an input field and "Save Note" button within the expanded section.
+    - [x] Display existing notes with the name of the mechanic who wrote them.
+    - [x] Consume AppViewModel for current mechanic details directly to execute task toggles/notes.
 
 ### 10. Collaborative Repair Screen UI
 - **File Name**: `RepairWorkflowScreen.kt`
@@ -150,9 +151,11 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `TaskListItem.kt`, `RepairService.kt`
 - **Where it will be called**: Mechanic Navigation Graph
 - **Tasks**:
-    - [ ] Use `LaunchedEffect` to trigger `subscribeToVehicleTasks` on screen composition.
-    - [ ] Render a LazyColumn using the `TaskListItem` Composable for each task.
-    - [ ] Add visual cues (e.g., a green highlight or Material icon checkmark) when another mechanic finishes a task while the screen is displayed (NFR-2).
+    - [x] Use `LaunchedEffect` to trigger `subscribeToVehicleTasks` on screen composition.
+    - [x] Render a LazyColumn using the `TaskListItem` Composable for each task.
+    - [x] Add visual cues (e.g., a green highlight or Material icon checkmark) when another mechanic finishes a task while the screen is displayed (NFR-2).
+    - [x] Implement error handling and loading states for Firestore operations.
+    - [x] Show snackbar feedback for all user actions (task toggle, note saved, errors).
 
 ---
 
