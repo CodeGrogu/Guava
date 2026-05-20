@@ -58,11 +58,16 @@ import java.util.concurrent.Executors
 // ─────────────────────────────────────────────────────────────
 @Composable
 fun CameraCapture(
-    onImageCaptured: (Uri) -> Unit
+    onImageCaptured: (Uri) -> Unit,
+    onImageCleared: () -> Unit = {}
 ) {
     val context       = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope         = rememberCoroutineScope()
+    val cameraExecutor = remember(context) { Executors.newSingleThreadExecutor() }
+    val cameraProviderFuture = remember(context) {
+        ProcessCameraProvider.getInstance(context)
+    }
 
     // State
     var hasCameraPermission by remember { mutableStateOf(false) }
@@ -82,6 +87,26 @@ fun CameraCapture(
     // Request permission on first composition
     LaunchedEffect(Unit) {
         permissionLauncher.launch(android.Manifest.permission.CAMERA)
+    }
+
+    DisposableEffect(cameraProviderFuture) {
+        onDispose {
+            runCatching {
+                if (cameraProviderFuture.isDone) {
+                    cameraProviderFuture.get().unbindAll()
+                }
+            }
+            cameraExecutor.shutdown()
+        }
+    }
+
+    LaunchedEffect(capturedImageUri) {
+        if (capturedImageUri != null && cameraProviderFuture.isDone) {
+            runCatching {
+                cameraProviderFuture.get().unbindAll()
+            }
+            imageCaptureUseCase = null
+        }
     }
 
     // ── UI ───────────────────────────────────────────────────
