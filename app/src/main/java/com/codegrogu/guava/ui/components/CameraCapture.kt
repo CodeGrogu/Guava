@@ -335,7 +335,7 @@ fun CameraCapture(
 
                             capture.takePicture(
                                 outputOptions,
-                                ContextCompat.getMainExecutor(context),
+                                cameraExecutor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(
                                         output: ImageCapture.OutputFileResults
