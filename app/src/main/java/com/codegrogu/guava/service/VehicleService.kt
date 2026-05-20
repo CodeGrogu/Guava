@@ -5,7 +5,11 @@ import com.codegrogu.guava.firebase.FirebaseConfig
 import com.codegrogu.guava.model.Vehicle
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
+import com.google.firebase.storage.StorageException
+import com.google.firebase.storage.StorageMetadata
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.delay
+import java.io.File
 import java.util.UUID
 
 object VehicleService {
@@ -19,19 +23,34 @@ object VehicleService {
     ): Result<String> {
 
         return try {
-
-            val fileName = "condition_photos/${UUID.randomUUID()}.jpg"
+            validateLocalImage(compressedImageUri)
 
             val storageRef = FirebaseConfig
                 .storage
                 .reference
-                .child(fileName)
+                .child("condition_photos")
+                .child("${UUID.randomUUID()}.jpg")
+
+            val metadata = StorageMetadata.Builder()
+                .setContentType("image/jpeg")
+                .build()
 
             // Upload image
-            storageRef.putFile(compressedImageUri).await()
+            val uploadSnapshot = storageRef
+                .putFile(compressedImageUri, metadata)
+                .await()
 
             // Fetch download URL
-            val downloadUrl = storageRef.downloadUrl.await().toString()
+            val downloadUrl = try {
+                uploadSnapshot.storage.downloadUrl.await().toString()
+            } catch (error: StorageException) {
+                if (error.errorCode != StorageException.ERROR_OBJECT_NOT_FOUND) {
+                    throw error
+                }
+
+                delay(250)
+                uploadSnapshot.storage.downloadUrl.await().toString()
+            }
 
             Result.success(downloadUrl)
 
@@ -127,6 +146,19 @@ object VehicleService {
         } catch (e: Exception) {
 
             Result.failure(e)
+        }
+    }
+
+    private fun validateLocalImage(uri: Uri) {
+        if (uri.scheme != "file") {
+            return
+        }
+
+        val path = uri.path
+            ?: throw IllegalArgumentException("Captured image path is missing.")
+
+        if (!File(path).exists()) {
+            throw IllegalArgumentException("Captured image file does not exist.")
         }
     }
 }
