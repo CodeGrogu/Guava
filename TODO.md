@@ -82,8 +82,8 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Where it will be called**: `CheckInScreen` Composable
 - **Tasks**:
     - [x] Add camera and image compression libraries to `build.gradle.kts` (e.g., `androidx.camera:camera-camera2`, image compression library).
-    - [x] **Update `AndroidManifest.xml` with `<uses-permission android:name="android.permission.CAMERA" />` and storage permissions.**
-    - [x] Implement runtime permission requests for camera and storage permissions.
+    - [x] **Update `AndroidManifest.xml` with `<uses-permission android:name="android.permission.CAMERA" />`.**
+    - [x] Implement runtime permission request for camera access.
     - [x] Build Jetpack Compose camera preview UI (Viewfinder, Capture button, Retake button).
     - [x] Implement logic to compress raw high-resolution images before saving to device cache (conserves Firebase free-tier bandwidth).
 
