@@ -15,7 +15,7 @@ used to grade the assignment.
 
 Use these Firebase accounts for evaluation:
 
-| Role | Email | Password |
-| :--- | :--- | :--- |
+| Role | Email                   | Password       |
+| :--- |:------------------------|:---------------|
 | Manager | `manager@valentine.com` | `123QWE!@#qwe` |
-| Mechanic | `testmechanic@valetine.com` | `123QWE!@#qwe` |
+| Mechanic | `test@test.com`         | `P@ss1234`     |
