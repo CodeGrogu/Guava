@@ -8,22 +8,49 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
-import android.view.Surface
+import android.view.Surface as AndroidSurface
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,46 +80,30 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.Executors
 
-// ─────────────────────────────────────────────────────────────
-// CameraCapture
-//
-// Reusable composable that:
-//   1. Requests camera permission at runtime
-//   2. Shows a live CameraX viewfinder
-//   3. Captures a photo on button press
-//   4. Compresses the image (NFR-5) before returning the URI
-//   5. Allows retaking the photo
-//
-// Usage:
-//   CameraCapture(onImageCaptured = { uri -> /* use uri */ })
-// ─────────────────────────────────────────────────────────────
 @Composable
 fun CameraCapture(
     onImageCaptured: (Uri) -> Unit,
     onImageCleared: () -> Unit = {}
 ) {
-    val context       = LocalContext.current
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val activity = context.findActivity()
-    val scope         = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     val cameraExecutor = remember(context) { Executors.newSingleThreadExecutor() }
     val cameraProviderFuture = remember(context) {
         ProcessCameraProvider.getInstance(context)
     }
 
-    // State
     var hasCameraPermission by remember {
         mutableStateOf(context.hasCameraPermission())
     }
     var permissionRequested by rememberSaveable { mutableStateOf(false) }
     var shouldOpenSettings by remember { mutableStateOf(false) }
-    var capturedImageUri    by remember { mutableStateOf<Uri?>(null) }
-    var isCompressing       by remember { mutableStateOf(false) }
+    var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isCompressing by remember { mutableStateOf(false) }
 
-    // ImageCapture use-case — held in state so the capture button can reference it
     var imageCaptureUseCase by remember { mutableStateOf<ImageCapture?>(null) }
 
-    // ── Runtime permission launcher ──────────────────────────
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -156,7 +167,6 @@ fun CameraCapture(
         }
     }
 
-    // ── UI ───────────────────────────────────────────────────
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -174,7 +184,6 @@ fun CameraCapture(
         )
 
         when {
-            // ── Permission denied ────────────────────────
             !hasCameraPermission -> {
                 Surface(
                     modifier = Modifier
@@ -230,7 +239,6 @@ fun CameraCapture(
                 }
             }
 
-            // ── Photo already taken — show preview ───────
             capturedImageUri != null -> {
                 Box(
                     modifier = Modifier
@@ -328,7 +336,6 @@ fun CameraCapture(
                 }
             }
 
-            // ── Live camera viewfinder ───────────────────
             else -> {
                 Box(
                     modifier = Modifier
@@ -356,7 +363,7 @@ fun CameraCapture(
                                 val capture = ImageCapture.Builder()
                                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                                     .setTargetRotation(
-                                        previewView.display?.rotation ?: Surface.ROTATION_0
+                                        previewView.display?.rotation ?: AndroidSurface.ROTATION_0
                                     )
                                     .build()
 
@@ -430,9 +437,6 @@ fun CameraCapture(
     }
 }
 
-// ── Helpers ──────────────────────────────────────────────────
-
-// Creates a temp file in the app's cache directory for the raw capture
 private fun createImageFile(context: Context): File {
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
         .format(System.currentTimeMillis())

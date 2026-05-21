@@ -169,9 +169,9 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `FirebaseConfig.kt`, `VehicleService.kt`
 - **Where it will be called**: `ManagerDashboard` Composable
 - **Tasks**:
-    - [ ] Create `getEmployeePerformanceReport(mechanicId: String, dateRange: DateRange)` suspend function to query all tasks completed/noted by a specific user.
-    - [ ] Create `getVehicleIntakeReport(dateRange: DateRange)` suspend function to pull initial condition images and kilometers logged at check-in.
-    - [ ] Format and sanitize the data returns so they are easily consumable by the UI components.
+    - [x] Create `getEmployeePerformanceReport(mechanicId: String, dateRange: DateRange)` suspend function to query all tasks completed/noted by a specific user.
+    - [x] Create `getVehicleIntakeReport(dateRange: DateRange)` suspend function to pull initial condition images and kilometers logged at check-in.
+    - [x] Format and sanitize the data returns so they are easily consumable by the UI components.
 
 ### 12. Report Card UI Component
 - **File Name**: `ReportCard.kt`
@@ -180,9 +180,9 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: None
 - **Where it will be called**: `ManagerDashboard` Composable
 - **Tasks**:
-    - [ ] Design Employee variant: Show mechanic name, total tasks completed, and list of specific vehicle IDs they worked on (use Material Design elevation/shadows).
-    - [ ] Design Vehicle variant: Show Truck ID, Check-in Date, Initial KM, and an image thumbnail of the vehicle condition.
-    - [ ] Implement a modal/fullscreen feature to click and expand the vehicle condition thumbnail to full screen.
+    - [x] Design Employee variant: Show mechanic name, total tasks completed, and list of specific vehicle IDs they worked on (use Material Design elevation/shadows).
+    - [x] Design Vehicle variant: Show Truck ID, Check-in Date, Initial KM, and an image thumbnail of the vehicle condition.
+    - [x] Implement a modal/fullscreen feature to click and expand the vehicle condition thumbnail to full screen.
 
 ### 13. Manager Dashboard Screen UI
 - **File Name**: `ManagerDashboard.kt`
@@ -191,8 +191,8 @@ This document outlines the detailed implementation plan, structured chronologica
 - **Depends On**: `ReportCard.kt`, `ReportService.kt`, AppViewModel
 - **Where it will be called**: Manager Navigation Graph
 - **Tasks**:
-    - [ ] Create a Compose TabRow to toggle between "Employee Reports" and "Vehicle Intake Logs".
-    - [ ] Build date filter UI (e.g., "Today", "This Week", "This Month") to pass arguments to the reporting service.
-    - [ ] Map the fetched data to `ReportCard` Composables.
-    - [ ] Add an "Export" or "Print" button (optional, for extra polish).
-    - [ ] Add a Manager Logout button using the AppViewModel authentication state logic.
+    - [x] Create a Compose TabRow to toggle between "Employee Reports" and "Vehicle Intake Logs".
+    - [x] Build date filter UI (e.g., "Today", "This Week", "This Month") to pass arguments to the reporting service.
+    - [x] Map the fetched data to `ReportCard` Composables.
+    - [x] Add an "Export" or "Print" button (optional, for extra polish).
+    - [x] Add a Manager Logout button using the AppViewModel authentication state logic.

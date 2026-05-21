@@ -51,60 +51,26 @@ import com.codegrogu.guava.ui.components.GarageImagePreview
 import com.codegrogu.guava.ui.theme.SafetyOrange
 import kotlinx.coroutines.launch
 
-// ─────────────────────────────────────────────────────────────────────────────
-// REPAIR WORKFLOW SCREEN
-//
-// This is the main screen where a mechanic views and works on all repair tasks
-// for a specific vehicle.
-//
-// Flow:
-// 1. Screen loads, LaunchedEffect triggers subscribeToVehicleTasks()
-// 2. RepairService.subscribeToVehicleTasks() opens a real-time listener to Firestore
-// 3. Initial task list is shown immediately
-// 4. If another mechanic updates a task, the Flow emits new data and screen re-renders
-// 5. All mechanics viewing this vehicle see changes in real-time
-//
-// This is WHERE ALL THE REAL-TIME MAGIC HAPPENS!
-// ─────────────────────────────────────────────────────────────────────────────
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepairWorkflowScreen(
-    // The vehicle ID to fetch tasks for
     vehicleId: String,
-
-    vehicleLabel: String = vehicleId,
-
-    // The current mechanic's information (for attribution when they update tasks)
     currentUser: User,
-
-    onNavigateBack: () -> Unit = {},
-
-    // Optional modifier for layout
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    vehicleLabel: String = vehicleId,
+    onNavigateBack: () -> Unit = {}
 ) {
-    // Snackbar state: Used to show error/success messages to the mechanic
-    // (e.g., "Note saved!", "Error updating task")
     val snackbarHostState = remember { SnackbarHostState() }
-
-    // Coroutine scope for launching async operations (Firestore updates)
-    // rememberCoroutineScope gives us a scope tied to this composable's lifecycle
     val coroutineScope = rememberCoroutineScope()
     var newTaskText by remember { mutableStateOf("") }
     var isAddingTask by remember { mutableStateOf(false) }
     var vehicle by remember { mutableStateOf<Vehicle?>(null) }
     var vehicleLoadError by remember { mutableStateOf<String?>(null) }
 
-    // Subscribe to real-time task updates from Firestore
-    // - Initial collection happens here
-    // - subscribeToVehicleTasks() returns a Flow<List<RepairTask>>
-    // - collectAsState() converts the Flow to a Compose State
-    //   (so when Flow emits new data, the screen re-renders automatically)
     val tasksFlow = remember(vehicleId) { RepairService.subscribeToVehicleTasks(vehicleId) }
     val tasksState = tasksFlow.collectAsState(initial = null)
     val tasks = tasksState.value
 
-    // When the composable first enters the screen, log that we're loading tasks
     LaunchedEffect(vehicleId) {
         VehicleService.getVehicle(vehicleId)
             .onSuccess {
@@ -336,8 +302,6 @@ fun RepairWorkflowScreen(
                             // For each task, display a TaskListItem component
                             TaskListItem(
                                 task = task,
-                                currentMechanicUid = currentUser.id,
-                                currentMechanicName = currentUser.name,
 
                                 // When the mechanic toggles the checkbox
                                 onTaskToggle = { isComplete ->
@@ -402,7 +366,8 @@ fun RepairWorkflowScreen(
                                             noteText = noteText,
                                             noteImageUrl = noteImageUrl,
                                             mechanicUid = currentUser.id,
-                                            mechanicName = currentUser.name
+                                            mechanicName = currentUser.name,
+                                            taskDescription = task.description
                                         )
 
                                         result.onSuccess {

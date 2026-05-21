@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
 import android.util.Log
+import androidx.core.graphics.scale
 import com.codegrogu.guava.firebase.FirebaseConfig
 import com.codegrogu.guava.model.Vehicle
 import com.google.firebase.firestore.DocumentSnapshot
@@ -19,10 +20,6 @@ object VehicleService {
     private const val TAG = "VehicleService"
     private const val MAX_INLINE_IMAGE_BYTES = 180_000
 
-    // ─────────────────────────────────────────────────────────
-    // Upload vehicle condition image to Firebase Storage
-    // Returns the download URL
-    // ─────────────────────────────────────────────────────────
     suspend fun uploadConditionImage(
         compressedImageUri: Uri
     ): Result<String> {
@@ -37,9 +34,6 @@ object VehicleService {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // Create a new vehicle check-in record
-    // ─────────────────────────────────────────────────────────
     suspend fun createCheckInRecord(
         vehicle: Vehicle,
         currentUserUid: String,
@@ -78,9 +72,6 @@ object VehicleService {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // Fetch all checked-in vehicles
-    // ─────────────────────────────────────────────────────────
     suspend fun getVehicle(vehicleId: String): Result<Vehicle> {
         return try {
             val doc = FirebaseConfig
@@ -209,11 +200,9 @@ object VehicleService {
             ?: return imageBytes
 
         val scale = minOf(1f, 640f / originalBitmap.width, 360f / originalBitmap.height)
-        val bitmap = Bitmap.createScaledBitmap(
-            originalBitmap,
-            (originalBitmap.width * scale).toInt().coerceAtLeast(1),
-            (originalBitmap.height * scale).toInt().coerceAtLeast(1),
-            true
+        val bitmap = originalBitmap.scale(
+            width = (originalBitmap.width * scale).toInt().coerceAtLeast(1),
+            height = (originalBitmap.height * scale).toInt().coerceAtLeast(1)
         )
 
         val qualities = listOf(45, 35, 25)

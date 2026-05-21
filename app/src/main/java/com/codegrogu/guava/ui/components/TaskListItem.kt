@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -22,9 +23,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,80 +38,38 @@ import androidx.compose.ui.unit.sp
 import com.codegrogu.guava.model.RepairTask
 import com.codegrogu.guava.ui.theme.SafetyOrange
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TASK LIST ITEM COMPONENT
-//
-// This is a single row that displays one repair task.
-// It shows:
-//   - A checkbox: The mechanic taps it to mark the task complete/incomplete
-//   - The task description: What needs to be fixed (e.g., "Replace clutch")
-//   - (Conditionally) "Completed by [Name]": Shows which mechanic finished it
-//
-// This component is reusable and will be placed in a scrollable list in
-// RepairWorkflowScreen so the mechanic can see ALL tasks for a vehicle.
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 fun TaskListItem(
-    // The repair task data to display
     task: RepairTask,
-
-    // The current mechanic's Firebase auth UID
-    // (needed to know if THIS mechanic completed the task)
-    currentMechanicUid: String,
-
-    // The current mechanic's name for display
-    // (needed if they toggle the task in this session)
-    currentMechanicName: String,
-
-    // Callback: Called when the mechanic taps the checkbox
-    // Passes: whether to mark complete (true) or incomplete (false)
     onTaskToggle: (isComplete: Boolean) -> Unit,
-
-    // Callback: Called when the mechanic saves a new note
-    // Passes: the note text and optional attached image URI
     onNoteAdded: (noteText: String, imageUri: Uri?) -> Unit,
-
-    // Optional modifier for styling/layout
     modifier: Modifier = Modifier
 ) {
-    // Local state: Is the notes section expanded or collapsed?
-    // Starts collapsed by default (remember { mutableStateOf(false) })
     val isNotesExpanded = remember { mutableStateOf(false) }
-
-    // Local state: The text the mechanic is typing in the note input field
     val noteInputText = remember { mutableStateOf("") }
     val attachedImageUri = remember { mutableStateOf<Uri?>(null) }
     val showNoteCamera = remember { mutableStateOf(false) }
-    val noteCameraSessionKey = remember { mutableStateOf(0) }
+    val noteCameraSessionKey = remember { mutableIntStateOf(0) }
 
-    // The entire component is a Column so we can stack multiple sections
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
-        // ─────────────────────────────────────────────────────────
-        // FIRST ROW: Checkbox + Task Description + Expand Icon
-        // ─────────────────────────────────────────────────────────
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    // When user taps anywhere on this row (except checkbox), toggle expand
                     isNotesExpanded.value = !isNotesExpanded.value
                 }
         ) {
-            // The Material Design checkbox
-            // When the mechanic taps it, onTaskToggle is called with the new state
             Checkbox(
                 checked = task.isCompleted,
                 onCheckedChange = { newState ->
                     onTaskToggle(newState)
                 },
-                // Use SafetyOrange as the accent color to match the industrial theme
                 colors = CheckboxDefaults.colors(
                     checkedColor = SafetyOrange,
                     uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
@@ -118,11 +77,8 @@ fun TaskListItem(
                 )
             )
 
-            // Add some space between the checkbox and the text
             Spacer(modifier = Modifier.width(12.dp))
 
-            // The task description (what needs to be fixed)
-            // Uses monospace font to match the garage industrial theme
             Text(
                 text = task.description,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -141,15 +97,9 @@ fun TaskListItem(
             )
         }
 
-        // ─────────────────────────────────────────────────────────
-        // SECOND ROW: "Completed by [Name]" (only if task is done)
-        // ─────────────────────────────────────────────────────────
         if (task.isCompleted && task.completedByName.isNotEmpty()) {
-            // Add a little spacing between the checkbox row and this text
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Show which mechanic completed this task
-            // This text is indented slightly to align under the task description
             Text(
                 text = "Completed by: ${task.completedByName}",
                 style = MaterialTheme.typography.labelSmall.copy(
@@ -162,14 +112,9 @@ fun TaskListItem(
             )
         }
 
-        // ─────────────────────────────────────────────────────────
-        // NOTES SECTION (COLLAPSIBLE)
-        // Only shows if user has expanded it OR if there are existing notes
-        // ─────────────────────────────────────────────────────────
         if (isNotesExpanded.value) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // EXISTING NOTES: Display all notes that mechanics have already written
             if (task.notes.isNotEmpty()) {
                 Text(
                     text = "MECHANIC NOTES:",
@@ -184,14 +129,12 @@ fun TaskListItem(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Display each note with the mechanic's name and the note text
                 for (note in task.notes) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(start = 40.dp)
                     ) {
-                        // Show the mechanic's name in a smaller, dimmed text
                         Text(
                             text = "— ${note.mechanicName}",
                             style = MaterialTheme.typography.labelSmall.copy(
@@ -202,7 +145,6 @@ fun TaskListItem(
                             )
                         )
 
-                        // Show the actual note text
                         Text(
                             text = note.text,
                             style = MaterialTheme.typography.bodySmall.copy(
@@ -230,7 +172,6 @@ fun TaskListItem(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // INPUT FIELD: Allow the mechanic to type a new note
             OutlinedTextField(
                 value = noteInputText.value,
                 onValueChange = { noteInputText.value = it },
@@ -284,12 +225,12 @@ fun TaskListItem(
 
             if (showNoteCamera.value) {
                 Spacer(modifier = Modifier.height(8.dp))
-                key(noteCameraSessionKey.value) {
+                key(noteCameraSessionKey.intValue) {
                     CameraCapture(
                         onImageCaptured = { uri ->
                             attachedImageUri.value = uri
                             showNoteCamera.value = false
-                            noteCameraSessionKey.value += 1
+                            noteCameraSessionKey.intValue += 1
                         },
                         onImageCleared = {
                             attachedImageUri.value = null
@@ -300,14 +241,12 @@ fun TaskListItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // SAVE NOTE BUTTON: When tapped, send the note text to the parent
-            // Then clear the input field so it's ready for the next note
             GarageButton(
                 text = "SAVE NOTE",
                 onClick = {
                     if (noteInputText.value.isNotBlank() || attachedImageUri.value != null) {
                         onNoteAdded(noteInputText.value, attachedImageUri.value)
-                        noteInputText.value = ""  // Clear the input
+                        noteInputText.value = ""
                         attachedImageUri.value = null
                     }
                 },

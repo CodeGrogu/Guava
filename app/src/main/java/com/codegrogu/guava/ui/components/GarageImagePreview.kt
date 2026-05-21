@@ -27,7 +27,8 @@ import com.codegrogu.guava.ui.theme.SafetyOrange
 fun GarageImagePreview(
     imageUrl: String,
     contentDescription: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
     val shape = RoundedCornerShape(4.dp)
 
@@ -53,7 +54,7 @@ fun GarageImagePreview(
                         bitmap = imageBitmap,
                         contentDescription = contentDescription,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = contentScale
                     )
                 } else {
                     ImageFallbackText("IMAGE ERROR")
@@ -68,7 +69,7 @@ fun GarageImagePreview(
                     model = imageUrl,
                     contentDescription = contentDescription,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = contentScale
                 )
             }
 

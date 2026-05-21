@@ -1,13 +1,42 @@
 package com.codegrogu.guava.ui.screens
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,19 +44,18 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.codegrogu.guava.firebase.FirebaseConfig
 import com.codegrogu.guava.model.DateRange
-import com.codegrogu.guava.model.User
 import com.codegrogu.guava.model.Vehicle
 import com.codegrogu.guava.service.EmployeePerformanceReport
 import com.codegrogu.guava.service.ReportService
-import com.codegrogu.guava.ui.components.*
+import com.codegrogu.guava.ui.components.EmployeeReportCard
+import com.codegrogu.guava.ui.components.GarageBackground
+import com.codegrogu.guava.ui.components.VehicleReportCard
 import com.codegrogu.guava.ui.theme.IndustrialBlack
 import com.codegrogu.guava.ui.theme.SafetyOrange
 import com.codegrogu.guava.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import java.util.*
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,52 +78,52 @@ fun ManagerDashboardScreen(
     fun fetchReports() {
         scope.launch {
             isLoadingReports = true
-            val calendar = Calendar.getInstance()
-            val end = calendar.time
-            
-            when (selectedFilter) {
-                "Today" -> {
-                    calendar.set(Calendar.HOUR_OF_DAY, 0)
-                    calendar.set(Calendar.MINUTE, 0)
-                    calendar.set(Calendar.SECOND, 0)
-                }
-                "This Week" -> {
-                    calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
-                }
-                "This Month" -> {
-                    calendar.set(Calendar.DAY_OF_MONTH, 1)
-                }
-            }
-            val start = calendar.time
-            val dateRange = DateRange(start, end)
+            try {
+                val calendar = Calendar.getInstance()
+                val end = calendar.time
 
-            if (selectedTab == 0) {
-                // Fetch mechanics first
-                try {
-                    val usersSnapshot = FirebaseConfig.firestore.collection("users")
-                        .whereEqualTo("role", "MECHANIC")
-                        .get().await()
-                    
-                    val mechanics = usersSnapshot.documents.map { doc ->
-                        User(doc.id, doc.getString("name") ?: "Unknown", doc.getString("email") ?: "")
+                when (selectedFilter) {
+                    "Today" -> {}
+                    "This Week" -> {
+                        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
                     }
+                    "This Month" -> {
+                        calendar.set(Calendar.DAY_OF_MONTH, 1)
+                    }
+                }
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                val start = calendar.time
+                val dateRange = DateRange(start, end)
+
+                if (selectedTab == 0) {
+                    val mechanics = ReportService.getMechanics().getOrThrow()
 
                     val reports = mechanics.map { mechanic ->
                         ReportService.getEmployeePerformanceReport(
                             mechanicId = mechanic.id,
                             mechanicName = mechanic.name,
                             dateRange = dateRange
-                        ).getOrDefault(EmployeePerformanceReport(mechanic.id, mechanic.name, 0, emptyList()))
+                        ).getOrThrow()
                     }
                     employeeReports = reports
-                } catch (e: Exception) {
-                    appViewModel.showSnackbar("Failed to fetch mechanics: ${e.message}")
+                } else {
+                    ReportService.getVehicleIntakeReport(dateRange)
+                        .onSuccess { vehicleLogs = it }
+                        .onFailure { throw it }
                 }
-            } else {
-                val result = ReportService.getVehicleIntakeReport(dateRange)
-                vehicleLogs = result.getOrDefault(emptyList())
+            } catch (e: Exception) {
+                if (selectedTab == 0) {
+                    employeeReports = emptyList()
+                } else {
+                    vehicleLogs = emptyList()
+                }
+                appViewModel.showSnackbar("Failed to load reports: ${e.message}")
+            } finally {
+                isLoadingReports = false
             }
-            isLoadingReports = false
         }
     }
 
