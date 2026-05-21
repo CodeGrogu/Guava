@@ -283,6 +283,22 @@ object RepairService {
                 .update("notes", FieldValue.arrayUnion(newNote))
                 .await()
 
+            // Minimal reporting index for date-range queries
+            FirebaseConfig.firestore
+                .collection("vehicles")
+                .document(vehicleId)
+                .collection("tasks")
+                .document(taskId)
+                .collection("notes")
+                .add(
+                    mapOf(
+                        "mechanicUid" to mechanicUid,
+                        "mechanicName" to mechanicName,
+                        "timestamp" to FieldValue.serverTimestamp()
+                    )
+                )
+                .await()
+
             // Success! Return an empty Result to indicate the note was added
             Result.success(Unit)
         } catch (e: Exception) {

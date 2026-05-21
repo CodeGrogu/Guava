@@ -20,7 +20,7 @@ object ReportService {
 
     /**
      * Query all tasks completed/noted by a specific user within a date range.
-     * Uses collectionGroup to search across all 'tasks' sub-collections.
+     * Uses collectionGroup to search across all 'tasks' and 'notes' sub-collections.
      */
     suspend fun getEmployeePerformanceReport(
         mechanicId: String,
@@ -31,7 +31,7 @@ object ReportService {
             val startTimestamp = Timestamp(dateRange.start)
             val endTimestamp = Timestamp(dateRange.end)
 
-            val snapshot = FirebaseConfig.firestore
+            val completedSnapshot = FirebaseConfig.firestore
                 .collectionGroup("tasks")
                 .whereEqualTo("completedByUid", mechanicId)
                 .whereGreaterThanOrEqualTo("completedAt", startTimestamp)
@@ -39,17 +39,29 @@ object ReportService {
                 .get()
                 .await()
 
-            // Extract unique vehicle IDs from the task document paths
-            // Path: /vehicles/{vehicleId}/tasks/{taskId}
-            val vehicleIds = snapshot.documents.mapNotNull { doc ->
+            val notedSnapshot = FirebaseConfig.firestore
+                .collectionGroup("notes")
+                .whereEqualTo("mechanicUid", mechanicId)
+                .whereGreaterThanOrEqualTo("timestamp", startTimestamp)
+                .whereLessThanOrEqualTo("timestamp", endTimestamp)
+                .get()
+                .await()
+
+            // Extract unique vehicle IDs from document paths
+            val completedVehicleIds = completedSnapshot.documents.mapNotNull { doc ->
                 doc.reference.parent.parent?.id
-            }.distinct()
+            }
+            val notedVehicleIds = notedSnapshot.documents.mapNotNull { doc ->
+                doc.reference.parent.parent?.parent?.id
+            }
+
+            val vehicleIds = (completedVehicleIds + notedVehicleIds).distinct()
 
             Result.success(
                 EmployeePerformanceReport(
                     mechanicId = mechanicId,
                     mechanicName = mechanicName,
-                    totalTasksCompleted = snapshot.size(),
+                    totalTasksCompleted = completedSnapshot.size(),
                     workedOnVehicleIds = vehicleIds
                 )
             )

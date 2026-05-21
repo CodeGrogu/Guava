@@ -1,13 +1,11 @@
 package com.codegrogu.guava.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +42,6 @@ fun ManagerDashboardScreen(
     val filters = listOf("Today", "This Week", "This Month")
 
     val scope = rememberCoroutineScope()
-    val uiState by appViewModel.uiState.collectAsState()
 
     var employeeReports by remember { mutableStateOf<List<EmployeePerformanceReport>>(emptyList()) }
     var vehicleLogs by remember { mutableStateOf<List<Vehicle>>(emptyList()) }
@@ -147,28 +144,24 @@ fun ManagerDashboardScreen(
                     .padding(horizontal = 16.dp)
             ) {
                 // TabRow
-                TabRow(
+                SecondaryTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
                     contentColor = SafetyOrange,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = SafetyOrange
-                        )
-                    },
                     divider = {}
                 ) {
                     tabs.forEachIndexed { index, title ->
+                        val isSelected = selectedTab == index
                         Tab(
-                            selected = selectedTab == index,
+                            selected = isSelected,
                             onClick = { selectedTab = index },
                             text = {
                                 Text(
                                     title,
                                     fontFamily = FontFamily.Monospace,
-                                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 12.sp,
+                                    color = if (isSelected) SafetyOrange else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
                             }
                         )
@@ -186,10 +179,19 @@ fun ManagerDashboardScreen(
                         FilterChip(
                             selected = selectedFilter == filter,
                             onClick = { selectedFilter = filter },
-                            label = { Text(filter.uppercase(), fontFamily = FontFamily.Monospace, fontSize = 10.sp) },
+                            label = {
+                                Text(
+                                    filter.uppercase(),
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                    color = if (selectedFilter == filter) IndustrialBlack
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                )
+                            },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = SafetyOrange,
-                                selectedLabelColor = IndustrialBlack
+                                selectedLabelColor = IndustrialBlack,
+                                containerColor = MaterialTheme.colorScheme.surface
                             ),
                             border = FilterChipDefaults.filterChipBorder(
                                 borderColor = if (selectedFilter == filter) SafetyOrange else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
@@ -217,6 +219,22 @@ fun ManagerDashboardScreen(
                 if (isLoadingReports) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = SafetyOrange)
+                    }
+                } else if (selectedTab == 0 && employeeReports.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No employee activity for this range.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                } else if (selectedTab == 1 && vehicleLogs.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No vehicle logs for this range.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
                     }
                 } else {
                     LazyColumn(

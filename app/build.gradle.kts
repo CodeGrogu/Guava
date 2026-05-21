@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.codegrogu.guava"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.codegrogu.guava"
@@ -39,18 +39,18 @@ android {
 
 dependencies {
     // CameraX
-implementation("androidx.camera:camera-camera2:1.3.4")
-implementation("androidx.camera:camera-lifecycle:1.3.4")
-implementation("androidx.camera:camera-view:1.3.4")
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 
-// Image compression
-implementation("id.zelory:compressor:3.0.1")
+    // Image compression
+    implementation(libs.compressor)
 
-// Coroutines (if not already present)
-implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Coroutines (if not already present)
+    implementation(libs.kotlinx.coroutines.android)
 
-// Coil for image preview thumbnail
-implementation("io.coil-kt:coil-compose:2.6.0")
+    // Coil for image preview thumbnail
+    implementation(libs.coil.compose)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

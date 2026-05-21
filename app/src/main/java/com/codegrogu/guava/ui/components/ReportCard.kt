@@ -39,7 +39,7 @@ fun EmployeeReportCard(
             modifier = Modifier
                 .matchParentSize()
                 .offset(x = 4.dp, y = 4.dp)
-                .background(Color.Black.copy(alpha = 0.3f))
+                .background(IndustrialBlack.copy(alpha = 0.35f))
         )
 
         Surface(
@@ -56,9 +56,9 @@ fun EmployeeReportCard(
                     fontWeight = FontWeight.Black,
                     color = SafetyOrange
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "TOTAL TASKS:",
@@ -83,9 +83,9 @@ fun EmployeeReportCard(
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 if (report.workedOnVehicleIds.isEmpty()) {
                     Text(
                         text = "NONE",
@@ -107,7 +107,7 @@ fun EmployeeReportCard(
                                     text = id.takeLast(6).uppercase(),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
@@ -124,6 +124,7 @@ fun VehicleReportCard(
     vehicle: Vehicle,
     modifier: Modifier = Modifier
 ) {
+    @Suppress("UNUSED_VALUE")
     var showFullScreenImage by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
     val dateString = vehicle.checkInTimestamp?.toDate()?.let { dateFormat.format(it) } ?: "N/A"
@@ -140,14 +141,14 @@ fun VehicleReportCard(
             modifier = Modifier
                 .matchParentSize()
                 .offset(x = 4.dp, y = 4.dp)
-                .background(Color.Black.copy(alpha = 0.3f))
+                .background(IndustrialBlack.copy(alpha = 0.35f))
         )
 
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                .border(1.dp, IndustrialBlack.copy(alpha = 0.6f)),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Row(
                 modifier = Modifier
@@ -161,7 +162,7 @@ fun VehicleReportCard(
                         .size(80.dp)
                         .border(1.dp, IndustrialBlack)
                         .clickable { showFullScreenImage = true },
-                    color = Color.DarkGray
+                    color = IndustrialBlack
                 ) {
                     if (vehicle.conditionImageUrl.isNotEmpty()) {
                         AsyncImage(
@@ -186,7 +187,7 @@ fun VehicleReportCard(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Black
                     )
-                    
+
                     Text(
                         text = "IN: $dateString",
                         style = MaterialTheme.typography.labelSmall,
@@ -211,7 +212,7 @@ fun VehicleReportCard(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    
+
                     Text(
                         text = "BY: ${vehicle.checkedInByName}",
                         style = MaterialTheme.typography.labelSmall,
@@ -237,7 +238,7 @@ fun FullScreenImageDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(IndustrialBlack)
         ) {
             AsyncImage(
                 model = imageUrl,
@@ -245,15 +246,16 @@ fun FullScreenImageDialog(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
             )
-            
+
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), MaterialTheme.shapes.extraSmall)
+                    .background(IndustrialBlack.copy(alpha = 0.8f), MaterialTheme.shapes.extraSmall)
+                    .border(1.dp, SafetyOrange, MaterialTheme.shapes.extraSmall)
             ) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = SafetyOrange)
             }
         }
     }

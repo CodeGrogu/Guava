@@ -19,6 +19,7 @@ import com.codegrogu.guava.ui.screens.RepairWorkflowScreen
 import com.codegrogu.guava.viewmodel.AppViewModel
 import com.codegrogu.guava.viewmodel.UiEvent
 import com.codegrogu.guava.ui.components.AppSnackbarVisuals
+import com.codegrogu.guava.ui.theme.IndustrialBlack
 import kotlinx.coroutines.launch
 
 @Composable
@@ -57,9 +58,22 @@ fun AppNavigation(
     Scaffold(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
-                // Basic Snackbar implementation; can be customized further if AppSnackbarVisuals is defined
+                val visuals = data.visuals as? AppSnackbarVisuals
+                val container = when {
+                    visuals == null -> MaterialTheme.colorScheme.surface
+                    visuals.isError -> MaterialTheme.colorScheme.errorContainer
+                    else -> IndustrialBlack
+                }
+                val content = when {
+                    visuals == null -> MaterialTheme.colorScheme.onSurface
+                    visuals.isError -> MaterialTheme.colorScheme.onErrorContainer
+                    else -> MaterialTheme.colorScheme.onPrimary
+                }
+
                 Snackbar(
-                    snackbarData = data
+                    snackbarData = data,
+                    containerColor = container,
+                    contentColor = content
                 )
             }
         }
@@ -175,7 +189,7 @@ fun AppNavigation(
 
             composable<Destination.ManagerDashboard> {
                 ManagerDashboardScreen(
-                    userName = uiState.currentUser?.name ?: "Manager",
+                    appViewModel = appViewModel,
                     onLogout = {
                         logoutToLogin(Destination.ManagerDashboard)
                     }

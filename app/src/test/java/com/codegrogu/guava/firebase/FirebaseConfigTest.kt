@@ -35,7 +35,7 @@ class FirebaseConfigTest {
         mockStatic(FirebaseStorage::class.java).use { staticMock ->
             val mockStorage = mock<FirebaseStorage>()
             staticMock.`when`<FirebaseStorage> {
-                FirebaseStorage.getInstance("gs://${FirebaseConfig.STORAGE_BUCKET}")
+                FirebaseStorage.getInstance()
             }.thenReturn(mockStorage)
             
             assertNotNull(FirebaseConfig.storage)

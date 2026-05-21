@@ -7,8 +7,6 @@ import com.google.firebase.firestore.PersistentCacheSettings
 import com.google.firebase.storage.FirebaseStorage
 
 object FirebaseConfig {
-    const val STORAGE_BUCKET = "studio-1967341697-b5bec.firebasestorage.app"
-
     val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     val firestore: FirebaseFirestore by lazy {
@@ -25,6 +23,6 @@ object FirebaseConfig {
     }
 
     val storage: FirebaseStorage by lazy {
-        FirebaseStorage.getInstance("gs://$STORAGE_BUCKET")
+        FirebaseStorage.getInstance()
     }
 }

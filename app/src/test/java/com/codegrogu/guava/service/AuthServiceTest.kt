@@ -18,10 +18,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -34,9 +34,9 @@ class AuthServiceTest {
 
     @Before
     fun setup() {
-        auth = mock(FirebaseAuth::class.java)
-        firestore = mock(FirebaseFirestore::class.java)
-        appViewModel = mock(AppViewModel::class.java)
+        auth = mock()
+        firestore = mock()
+        appViewModel = mock()
         authService = AuthService(auth, firestore, appViewModel)
     }
 
@@ -51,10 +51,10 @@ class AuthServiceTest {
     @Test
     fun `getUserData returns correct user and role from firestore`() = runTest {
         val userId = "testId"
-        val mockCollection = mock(CollectionReference::class.java)
-        val mockDocument = mock(DocumentReference::class.java)
-        val mockTask = mock(Task::class.java) as Task<DocumentSnapshot>
-        val mockSnapshot = mock(DocumentSnapshot::class.java)
+        val mockCollection: CollectionReference = mock()
+        val mockDocument: DocumentReference = mock()
+        val mockTask: Task<DocumentSnapshot> = mock()
+        val mockSnapshot: DocumentSnapshot = mock()
 
         whenever(firestore.collection("users")).thenReturn(mockCollection)
         whenever(mockCollection.document(userId)).thenReturn(mockDocument)
@@ -81,10 +81,10 @@ class AuthServiceTest {
         val password = "password"
         val userId = "uid123"
         
-        val mockAuthTask = mock(Task::class.java) as Task<AuthResult>
-        val mockAuthResult = mock(AuthResult::class.java)
-        val mockFirebaseUser = mock(FirebaseUser::class.java)
-        
+        val mockAuthTask: Task<AuthResult> = mock()
+        val mockAuthResult: AuthResult = mock()
+        val mockFirebaseUser: FirebaseUser = mock()
+
         whenever(auth.signInWithEmailAndPassword(email, password)).thenReturn(mockAuthTask)
         whenever(mockAuthTask.isComplete).thenReturn(true)
         whenever(mockAuthTask.isSuccessful).thenReturn(true)
@@ -93,11 +93,11 @@ class AuthServiceTest {
         whenever(mockFirebaseUser.uid).thenReturn(userId)
         
         // Mock full data fetching
-        val mockCollection = mock(CollectionReference::class.java)
-        val mockDocument = mock(DocumentReference::class.java)
-        val mockDocTask = mock(Task::class.java) as Task<DocumentSnapshot>
-        val mockSnapshot = mock(DocumentSnapshot::class.java)
-        
+        val mockCollection: CollectionReference = mock()
+        val mockDocument: DocumentReference = mock()
+        val mockDocTask: Task<DocumentSnapshot> = mock()
+        val mockSnapshot: DocumentSnapshot = mock()
+
         whenever(firestore.collection("users")).thenReturn(mockCollection)
         whenever(mockCollection.document(userId)).thenReturn(mockDocument)
         whenever(mockDocument.get()).thenReturn(mockDocTask)
@@ -123,9 +123,9 @@ class AuthServiceTest {
         val userId = "authUid123"
         val firestoreDocumentId = "legacyDocId"
 
-        val mockAuthTask = mock(Task::class.java) as Task<AuthResult>
-        val mockAuthResult = mock(AuthResult::class.java)
-        val mockFirebaseUser = mock(FirebaseUser::class.java)
+        val mockAuthTask: Task<AuthResult> = mock()
+        val mockAuthResult: AuthResult = mock()
+        val mockFirebaseUser: FirebaseUser = mock()
 
         whenever(auth.signInWithEmailAndPassword(email, password)).thenReturn(mockAuthTask)
         whenever(mockAuthTask.isComplete).thenReturn(true)
@@ -135,15 +135,15 @@ class AuthServiceTest {
         whenever(mockFirebaseUser.uid).thenReturn(userId)
         whenever(mockFirebaseUser.email).thenReturn(email)
 
-        val mockCollection = mock(CollectionReference::class.java)
-        val mockUidDocument = mock(DocumentReference::class.java)
-        val mockUidTask = mock(Task::class.java) as Task<DocumentSnapshot>
-        val mockMissingSnapshot = mock(DocumentSnapshot::class.java)
-        val mockEmailQuery = mock(Query::class.java)
-        val mockLimitedQuery = mock(Query::class.java)
-        val mockQueryTask = mock(Task::class.java) as Task<QuerySnapshot>
-        val mockQuerySnapshot = mock(QuerySnapshot::class.java)
-        val mockEmailSnapshot = mock(DocumentSnapshot::class.java)
+        val mockCollection: CollectionReference = mock()
+        val mockUidDocument: DocumentReference = mock()
+        val mockUidTask: Task<DocumentSnapshot> = mock()
+        val mockMissingSnapshot: DocumentSnapshot = mock()
+        val mockEmailQuery: Query = mock()
+        val mockLimitedQuery: Query = mock()
+        val mockQueryTask: Task<QuerySnapshot> = mock()
+        val mockQuerySnapshot: QuerySnapshot = mock()
+        val mockEmailSnapshot: DocumentSnapshot = mock()
 
         whenever(firestore.collection("users")).thenReturn(mockCollection)
         whenever(mockCollection.document(userId)).thenReturn(mockUidDocument)
@@ -181,10 +181,10 @@ class AuthServiceTest {
         val userId = "newUid"
         val role = UserRole.MECHANIC
         
-        val mockAuthTask = mock(Task::class.java) as Task<AuthResult>
-        val mockAuthResult = mock(AuthResult::class.java)
-        val mockFirebaseUser = mock(FirebaseUser::class.java)
-        
+        val mockAuthTask: Task<AuthResult> = mock()
+        val mockAuthResult: AuthResult = mock()
+        val mockFirebaseUser: FirebaseUser = mock()
+
         whenever(auth.createUserWithEmailAndPassword(email, password)).thenReturn(mockAuthTask)
         whenever(mockAuthTask.isComplete).thenReturn(true)
         whenever(mockAuthTask.isSuccessful).thenReturn(true)
@@ -192,10 +192,10 @@ class AuthServiceTest {
         whenever(mockAuthResult.user).thenReturn(mockFirebaseUser)
         whenever(mockFirebaseUser.uid).thenReturn(userId)
         
-        val mockCollection = mock(CollectionReference::class.java)
-        val mockDocument = mock(DocumentReference::class.java)
-        val mockSetTask = mock(Task::class.java) as Task<Void>
-        
+        val mockCollection: CollectionReference = mock()
+        val mockDocument: DocumentReference = mock()
+        val mockSetTask: Task<Void> = mock()
+
         whenever(firestore.collection("users")).thenReturn(mockCollection)
         whenever(mockCollection.document(userId)).thenReturn(mockDocument)
         whenever(mockDocument.set(any())).thenReturn(mockSetTask)
