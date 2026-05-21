@@ -19,7 +19,7 @@ object VehicleService {
     private const val TAG = "VehicleService"
     private const val MAX_INLINE_IMAGE_BYTES = 180_000
 
-    // ─────────────────────────────────────────────────────────
+
     // Upload vehicle condition image to Firebase Storage
     // Returns the download URL
     // ─────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ object VehicleService {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
+
     // Create a new vehicle check-in record
     // ─────────────────────────────────────────────────────────
     suspend fun createCheckInRecord(
@@ -78,7 +78,6 @@ object VehicleService {
         }
     }
 
-    // ─────────────────────────────────────────────────────────
     // Fetch all checked-in vehicles
     // ─────────────────────────────────────────────────────────
     suspend fun getVehicle(vehicleId: String): Result<Vehicle> {
