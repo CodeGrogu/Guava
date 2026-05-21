@@ -74,10 +74,16 @@ fun ManagerDashboardScreen(
     var employeeReports by remember { mutableStateOf<List<EmployeePerformanceReport>>(emptyList()) }
     var vehicleLogs by remember { mutableStateOf<List<Vehicle>>(emptyList()) }
     var isLoadingReports by remember { mutableStateOf(false) }
+    var loadedEmployeeReport by remember { mutableStateOf(false) }
+    var loadedVehicleReport by remember { mutableStateOf(false) }
 
     fun fetchReports() {
         scope.launch {
-            isLoadingReports = true
+            isLoadingReports = if (selectedTab == 0) {
+                !loadedEmployeeReport
+            } else {
+                !loadedVehicleReport
+            }
             try {
                 val calendar = Calendar.getInstance()
                 val end = calendar.time
@@ -109,16 +115,22 @@ fun ManagerDashboardScreen(
                         ).getOrThrow()
                     }
                     employeeReports = reports
+                    loadedEmployeeReport = true
                 } else {
                     ReportService.getVehicleIntakeReport(dateRange)
-                        .onSuccess { vehicleLogs = it }
+                        .onSuccess {
+                            vehicleLogs = it
+                            loadedVehicleReport = true
+                        }
                         .onFailure { throw it }
                 }
             } catch (e: Exception) {
                 if (selectedTab == 0) {
                     employeeReports = emptyList()
+                    loadedEmployeeReport = true
                 } else {
                     vehicleLogs = emptyList()
+                    loadedVehicleReport = true
                 }
                 appViewModel.showSnackbar("Failed to load reports: ${e.message}")
             } finally {
